@@ -1,4 +1,4 @@
-const theme = {
+const themes = {
   title_color: "#2f80ed",
   icon_color: "#4c71f2",
   text_color: "#434d58",
@@ -6,5 +6,4 @@ const theme = {
   border_color: "#e4e2e2"
 };
 
-module.exports = theme;
-export default theme;
+export default themes;
