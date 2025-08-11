@@ -1,0 +1,19 @@
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+
+workflows:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**"
+
+assets:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "assets/**"
+          
+code:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.js"
