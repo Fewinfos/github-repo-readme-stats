@@ -1,6 +1,6 @@
 <!-- Banner Image -->
 <div align="center">
-  <img src="./assets/fewinfos-banner.png" alt="Willkommen zum FEWINFOS-Beitrag – GitHub Repository Stats Widget" width="100%">
+  <img src="../assets/fewinfos-banner.png" alt="Willkommen zum FEWINFOS-Beitrag – GitHub Repository Stats Widget" width="100%">
 </div>
 
 # 📦 GitHub Repository Stats Widget
@@ -91,10 +91,9 @@ Dieses Widget verwendet die GitHub REST API, um verschiedene Metadaten und Einbl
 - 🔗 Widget für verwandte Repositories
 - 🪄 Export als iframe / HTML-Embed
 
----
 
 ## 📂 Projektstruktur
-
+```
 github-repo-stats-widget/
 ├── index.html # Haupt-HTML-Datei
 ├── style.css # CSS-Styles
@@ -103,7 +102,7 @@ github-repo-stats-widget/
 ├── assets/ # Icons, Screenshots
 ├── README.md # Diese Dokumentationsdatei
 └── LICENSE # MIT-
-
+```
 
 ---
 
