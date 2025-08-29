@@ -1,6 +1,8 @@
+// Import static data from src/index.js (ESM style)
+import repoStats from '../src/index.js';
+
 // Export a function that can be used as a Vercel serverless function
-// Static SVG Repo Stats Counter Widget (no data fetching)
-module.exports = (req, res) => {
+export default function handler(req, res) {
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
   <svg width="900" height="360" viewBox="0 0 900 360" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -21,24 +23,24 @@ module.exports = (req, res) => {
       <g>
         <circle cx="200" cy="140" r="60" fill="#fde68a" stroke="#f59e42" stroke-width="4"/>
         <text x="200" y="155" text-anchor="middle" font-size="54" fill="#b45309" filter="url(#shadow)">★</text>
-        <text x="200" y="250" text-anchor="middle" font-size="50" fill="#18181b">123</text>
+        <text x="200" y="250" text-anchor="middle" font-size="50" fill="#18181b">${repoStats.stars}</text>
         <text x="200" y="290" text-anchor="middle" font-size="26" fill="#b45309" opacity="0.7">Stars</text>
       </g>
       <g>
         <circle cx="450" cy="140" r="60" fill="#a7f3d0" stroke="#059669" stroke-width="4"/>
         <text x="450" y="155" text-anchor="middle" font-size="50" fill="#047857" filter="url(#shadow)">🍴</text>
-        <text x="450" y="250" text-anchor="middle" font-size="50" fill="#18181b">45</text>
+        <text x="450" y="250" text-anchor="middle" font-size="50" fill="#18181b">${repoStats.forks}</text>
         <text x="450" y="290" text-anchor="middle" font-size="26" fill="#047857" opacity="0.7">Forks</text>
       </g>
       <g>
         <circle cx="700" cy="140" r="60" fill="#bfdbfe" stroke="#2563eb" stroke-width="4"/>
         <text x="700" y="155" text-anchor="middle" font-size="50" fill="#1d4ed8" filter="url(#shadow)">👁️</text>
-        <text x="700" y="250" text-anchor="middle" font-size="50" fill="#18181b">67</text>
+        <text x="700" y="250" text-anchor="middle" font-size="50" fill="#18181b">${repoStats.watchers}</text>
         <text x="700" y="290" text-anchor="middle" font-size="26" fill="#1d4ed8" opacity="0.7">Watchers</text>
       </g>
     </g>
   </svg>`;
   res.setHeader('Content-Type', 'image/svg+xml');
   res.status(200).send(svg);
-};
+}
   
