@@ -125,28 +125,4 @@ export default function handler(req, res) {
   }
 }
 
-// Named export: creation & last updated date only widget
-export function dateWidget(req, res) {
-  const dateSvg = `<?xml version="1.0" encoding="UTF-8"?>
-  <svg width="500" height="100" viewBox="0 0 500 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="bgGradient2" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#e0e7ff"/>
-        <stop offset="100%" stop-color="#f3f4f6"/>
-      </linearGradient>
-      <filter id="shadow2" x="-10" y="-10" width="520" height="120">
-        <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#a5b4fc"/>
-      </filter>
-    </defs>
-    <rect x="0" y="0" width="500" height="100" rx="24" fill="url(#bgGradient2)" filter="url(#shadow2)"/>
-    <text x="250" y="45" text-anchor="middle" font-size="28" font-family="'Segoe UI', 'Arial', sans-serif" fill="#6366f1" font-weight="bold" opacity="0.92">
-      📅 Repo Dates
-    </text>
-    <text x="250" y="80" text-anchor="middle" font-size="20" font-family="'Segoe UI', 'Arial', sans-serif" fill="#18181b" opacity="0.9">
-      Created: ${repoStats.createdAt}   |   Last updated: ${repoStats.updatedAt}
-    </text>
-  </svg>`;
-  res.setHeader('Content-Type', 'image/svg+xml');
-  res.status(200).send(dateSvg);
-}
   
