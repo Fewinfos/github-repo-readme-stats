@@ -2,6 +2,10 @@ import fetch from 'node-fetch';
 const GITHUB_API = 'https://api.github.com';
 
 export async function getRepoStats(repoFullName = 'vercel/next.js') {
+  function formatK(n) {
+    if (n >= 1000) return (n/1000).toFixed(n % 1000 === 0 ? 0 : 1) + 'k';
+    return n;
+  }
   const [owner, repo] = repoFullName.split('/');
   // Fetch repo info
   const repoRes = await fetch(`${GITHUB_API}/repos/${owner}/${repo}`);
@@ -95,9 +99,9 @@ export async function getRepoStats(repoFullName = 'vercel/next.js') {
   }
 
   return {
-    stars: repoData.stargazers_count,
-    forks: repoData.forks_count,
-    watchers: repoData.subscribers_count,
+    stars: formatK(repoData.stargazers_count),
+    forks: formatK(repoData.forks_count),
+    watchers: formatK(repoData.subscribers_count),
     createdAt: repoData.created_at?.slice(0,10),
     updatedAt: repoData.updated_at?.slice(0,10),
     license: repoData.license?.name || 'No license',
