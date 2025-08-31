@@ -1,9 +1,17 @@
-// Import static data from src/index.js (ESM style)
-import repoStats from '../src/index.js';
+
+import { getRepoStats } from '../src/index.js';
 
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   try {
+    const repo = req.query.repo || 'vercel/next.js';
+    const repoStats = await getRepoStats(repo);
+    // Rotate commitActivity so today is last
+    const daysOfWeek = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const todayIdx = new Date().getDay();
+    const rotatedCommits = repoStats.commitActivity.slice(todayIdx+1).concat(repoStats.commitActivity.slice(0, todayIdx+1));
+    const rotatedDays = daysOfWeek.slice(todayIdx+1).concat(daysOfWeek.slice(0, todayIdx+1));
+
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
     <svg viewBox="0 0 440 1350" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="auto" style="display:block;">
       <text x="30" y="28" font-size="18" font-family="Arial" fill="#2f80ed" font-weight="bold">📊 Repository Stats</text>
@@ -73,12 +81,12 @@ export default function handler(req, res) {
           <rect width="420" height="200" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
           <text x="20" y="30" font-size="18" font-family="Arial" fill="#2f80ed" font-weight="bold">📈 Commit Activity</text>
           <line x1="50" y1="150" x2="380" y2="150" stroke="#e4e2e2" stroke-width="2"/>
-          ${repoStats.commitActivity.map((val, i) => {
+          ${rotatedCommits.map((val, i) => {
             const x = 60 + i * 40;
             const y = 150 - val;
-            return `<rect x="${x}" y="${y}" width="20" height="${val}" fill="#4c71f2" rx="4"/>`;
+            return `<text x='${x + 10}' y='${y - 8}' font-size='12' font-family='Arial' fill='#4c71f2' text-anchor='middle'>${val}</text><rect x='${x}' y='${y}' width='20' height='${val}' fill='#4c71f2' rx='4'/>`;
           }).join('')}
-          ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d, i) => `<text x="${60 + i * 40}" y="170" font-size="12" font-family="Arial" fill="#434d58">${d}</text>`).join('')}
+          ${rotatedDays.map((d, i) => `<text x='${60 + i * 40}' y='170' font-size='12' font-family='Arial' fill='#434d58'>${d}</text>`).join('')}
         </g>
         <!-- PR Merge Time Widget -->
         <g transform="translate(10, 1060)">
@@ -124,29 +132,3 @@ export default function handler(req, res) {
     res.end(`<svg width="500" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#fff3f3"/><text x="50%" y="50%" text-anchor="middle" alignment-baseline="middle" font-size="18" fill="#d32f2f">Error: ${error.message}</text></svg>`);
   }
 }
-
-// Named export: creation & last updated date only widget
-export function dateWidget(req, res) {
-  const dateSvg = `<?xml version="1.0" encoding="UTF-8"?>
-  <svg width="500" height="100" viewBox="0 0 500 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="bgGradient2" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#e0e7ff"/>
-        <stop offset="100%" stop-color="#f3f4f6"/>
-      </linearGradient>
-      <filter id="shadow2" x="-10" y="-10" width="520" height="120">
-        <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#a5b4fc"/>
-      </filter>
-    </defs>
-    <rect x="0" y="0" width="500" height="100" rx="24" fill="url(#bgGradient2)" filter="url(#shadow2)"/>
-    <text x="250" y="45" text-anchor="middle" font-size="28" font-family="'Segoe UI', 'Arial', sans-serif" fill="#6366f1" font-weight="bold" opacity="0.92">
-      📅 Repo Dates
-    </text>
-    <text x="250" y="80" text-anchor="middle" font-size="20" font-family="'Segoe UI', 'Arial', sans-serif" fill="#18181b" opacity="0.9">
-      Created: ${repoStats.createdAt}   |   Last updated: ${repoStats.updatedAt}
-    </text>
-  </svg>`;
-  res.setHeader('Content-Type', 'image/svg+xml');
-  res.status(200).send(dateSvg);
-}
-  
