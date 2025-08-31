@@ -66,6 +66,34 @@ export async function getRepoStats(repoFullName = 'vercel/next.js') {
     // pinned is always 0
   }
 
+  // Fetch closed PRs and calculate average merge time (in days)
+  let prMergeTime = 0;
+  try {
+    let page = 1;
+    let mergedPRs = [];
+    let keepFetching = true;
+    while (keepFetching && mergedPRs.length < 50) { // limit to 50 merged PRs for performance
+      const prsRes = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/pulls?state=closed&per_page=100&page=${page}`);
+      if (!prsRes.ok) break;
+      const prs = await prsRes.json();
+      const merged = prs.filter(pr => pr.merged_at);
+      mergedPRs = mergedPRs.concat(merged);
+      if (prs.length < 100 || mergedPRs.length >= 50) keepFetching = false;
+      else page++;
+    }
+    if (mergedPRs.length > 0) {
+      const totalMergeTime = mergedPRs.reduce((sum, pr) => {
+        const created = new Date(pr.created_at);
+        const merged = new Date(pr.merged_at);
+        return sum + (merged - created);
+      }, 0);
+      prMergeTime = Math.round(totalMergeTime / mergedPRs.length / (1000 * 60 * 60 * 24));
+    }
+  } catch (e) {
+    // fallback to 0
+    console.error(e);
+  }
+
   return {
     stars: repoData.stargazers_count,
     forks: repoData.forks_count,
@@ -76,7 +104,7 @@ export async function getRepoStats(repoFullName = 'vercel/next.js') {
     languages,
     dependencies: [], // Not available from GitHub API directly
     commitActivity,
-    prMergeTime: 0, // Not available from public API easily
+    prMergeTime,
     issues: { open, closed, pinned }
   };
 }
