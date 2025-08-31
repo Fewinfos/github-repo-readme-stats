@@ -3,11 +3,11 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/src/index.js"
+      "dest": "/api/index.js"
     }
   ],
   "functions": {
-    "src/index.js": {
+    "api/index.js": {
       "memory": 128
     }
   }
