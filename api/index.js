@@ -12,8 +12,15 @@ export default async function handler(req, res) {
     const rotatedCommits = repoStats.commitActivity.slice(todayIdx+1).concat(repoStats.commitActivity.slice(0, todayIdx+1));
     const rotatedDays = daysOfWeek.slice(todayIdx+1).concat(daysOfWeek.slice(0, todayIdx+1));
 
+    // Dynamic heights
+    const depRows = repoStats.dependencies && repoStats.dependencies.length > 0 && repoStats.dependencies[0].name !== 'Not specified'
+      ? Math.ceil(repoStats.dependencies.length / 2)
+      : 1;
+    const depWidgetHeight = 50 + depRows * 40 + 40;
+    // Calculate total SVG height (rough estimate, adjust as needed)
+    const svgHeight = 40 + 140 + 20 + 150 + 20 + 100 + 20 + 220 + 20 + depWidgetHeight + 20 + 200 + 20 + 120 + 20 + 160;
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
-    <svg viewBox="0 0 440 1350" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="auto" style="display:block;">
+    <svg viewBox="0 0 440 ${svgHeight}" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="auto" style="display:block;overflow:auto;">
       <text x="30" y="28" font-size="18" font-family="Arial" fill="#2f80ed" font-weight="bold">📊 Repository Stats</text>
       <g transform="translate(0, 40)">
         <!-- Stats Counter Widget -->
@@ -65,20 +72,38 @@ export default async function handler(req, res) {
         </g>
         <!-- Dependencies Widget -->
         <g transform="translate(10, 660)">
-          <rect width="420" height="180" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
+          <rect width="420" height="${depWidgetHeight}" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
           <text x="20" y="30" font-size="18" font-family="Arial" fill="#2f80ed" font-weight="bold">📦 Dependencies</text>
           <g font-family="Arial" font-size="14" fill="#434d58">
-            ${
-              (!repoStats.dependencies || repoStats.dependencies.length === 0 ||
-                (repoStats.dependencies.length === 1 && repoStats.dependencies[0].name === 'Not specified'))
-                ? `<text x="20" y="70">Not defined</text>`
-                : repoStats.dependencies.map((dep, i) => {
-                    const x = 20 + (i % 3) * 120;
-                    const y = 50 + Math.floor(i / 3) * 40;
-                    return `<rect x="${x}" y="${y}" width="100" height="24" fill="#e4e2e2" rx="6"/>
-                    <text x="${x+10}" y="${y+18}">${dep.name} ${dep.version}</text>`;
-                  }).join('')
-            }
+            ${(() => {
+              if (!repoStats.dependencies || repoStats.dependencies.length === 0 ||
+                  (repoStats.dependencies.length === 1 && repoStats.dependencies[0].name === 'Not specified')) {
+                return `<text x="20" y="70">Not defined</text>`;
+              }
+              // Dynamic layout: max 2 per row, dynamic box width
+              const startX = 20;
+              const startY = 50;
+              let x = startX;
+              let y = startY;
+              let rowItems = 0;
+              let out = '';
+              repoStats.dependencies.forEach((dep, i) => {
+                const text = `${dep.name} ${dep.version}`.trim();
+                const textLen = text.length;
+                const boxWidth = Math.max(60, textLen * 8 + 20);
+                // If this is the second item in a row, move to next row
+                if (rowItems === 2) {
+                  x = startX;
+                  y += 36; // row height
+                  rowItems = 0;
+                }
+                out += `<rect x="${x}" y="${y}" width="${boxWidth}" height="24" fill="#e4e2e2" rx="6"/>
+                <text x="${x + boxWidth/2}" y="${y+17}" text-anchor="middle">${text}</text>`;
+                x += boxWidth + 20; // 20px gap between boxes
+                rowItems++;
+              });
+              return out;
+            })()}
           </g>
         </g>
         <!-- Commit Activity Widget -->

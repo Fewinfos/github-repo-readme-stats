@@ -7,6 +7,29 @@ export async function getRepoStats(repoFullName = 'vercel/next.js') {
     return n;
   }
   const [owner, repo] = repoFullName.split('/');
+  // Fetch dependencies from package.json if available
+  let dependencies = [];
+  try {
+    const pkgRes = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/contents/package.json`);
+    if (pkgRes.ok) {
+      const pkgJson = await pkgRes.json();
+      let pkgContent = pkgJson.content;
+      if (pkgJson.encoding === 'base64') {
+        pkgContent = Buffer.from(pkgContent, 'base64').toString('utf-8');
+      }
+      const pkg = JSON.parse(pkgContent);
+      if (pkg.dependencies && Object.keys(pkg.dependencies).length > 0) {
+        dependencies = Object.entries(pkg.dependencies).map(([name, version]) => ({ name, version }));
+      } else {
+        dependencies = [{ name: 'Not specified', version: '' }];
+      }
+    } else {
+      dependencies = [{ name: 'Not specified', version: '' }];
+    }
+  } catch (e) {
+    dependencies = [{ name: 'Not specified', version: '' }];
+    console.error(e);
+  }
   // Fetch repo info
   const repoRes = await fetch(`${GITHUB_API}/repos/${owner}/${repo}`);
   if (!repoRes.ok) {
@@ -109,7 +132,7 @@ export async function getRepoStats(repoFullName = 'vercel/next.js') {
     updatedAt: repoData.updated_at?.slice(0,10),
     license: repoData.license?.name || 'No license',
     languages,
-    dependencies: [], // Not available from GitHub API directly
+    dependencies,
     commitActivity,
     prMergeTime,
     issues: { open, closed, pinned }
