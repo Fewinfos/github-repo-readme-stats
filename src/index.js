@@ -9,7 +9,10 @@ export async function getRepoStats(repoFullName = 'vercel/next.js') {
   const [owner, repo] = repoFullName.split('/');
   // Fetch repo info
   const repoRes = await fetch(`${GITHUB_API}/repos/${owner}/${repo}`);
-  if (!repoRes.ok) throw new Error('Failed to fetch repo info');
+  if (!repoRes.ok) {
+    const errText = await repoRes.text();
+    throw new Error(`Failed to fetch repo info: ${repoRes.status} ${repoRes.statusText} - ${errText}`);
+  }
   const repoData = await repoRes.json();
 
   // Fetch languages

@@ -68,12 +68,17 @@ export default async function handler(req, res) {
           <rect width="420" height="180" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
           <text x="20" y="30" font-size="18" font-family="Arial" fill="#2f80ed" font-weight="bold">📦 Dependencies</text>
           <g font-family="Arial" font-size="14" fill="#434d58">
-            ${repoStats.dependencies.map((dep, i) => {
-              const x = 20 + (i % 3) * 120;
-              const y = 50 + Math.floor(i / 3) * 40;
-              return `<rect x="${x}" y="${y}" width="100" height="24" fill="#e4e2e2" rx="6"/>
-              <text x="${x+10}" y="${y+18}">${dep.name} ${dep.version}</text>`;
-            }).join('')}
+            ${
+              (!repoStats.dependencies || repoStats.dependencies.length === 0 ||
+                (repoStats.dependencies.length === 1 && repoStats.dependencies[0].name === 'Not specified'))
+                ? `<text x="20" y="70">Not defined</text>`
+                : repoStats.dependencies.map((dep, i) => {
+                    const x = 20 + (i % 3) * 120;
+                    const y = 50 + Math.floor(i / 3) * 40;
+                    return `<rect x="${x}" y="${y}" width="100" height="24" fill="#e4e2e2" rx="6"/>
+                    <text x="${x+10}" y="${y+18}">${dep.name} ${dep.version}</text>`;
+                  }).join('')
+            }
           </g>
         </g>
         <!-- Commit Activity Widget -->
