@@ -12,20 +12,42 @@ export default async function handler(req, res) {
     const rotatedCommits = repoStats.commitActivity.slice(todayIdx+1).concat(repoStats.commitActivity.slice(0, todayIdx+1));
     const rotatedDays = daysOfWeek.slice(todayIdx+1).concat(daysOfWeek.slice(0, todayIdx+1));
 
-    // Dynamic heights
+    // Dynamic heights for all widgets
+    const statsWidgetHeight = 140;
+    const timelineWidgetHeight = 150;
+    const licenseWidgetHeight = 100;
+  // Language widget height: base + donut space + 25px per language
+  const donutSpace = 140; // enough for donut chart
+  const langWidgetHeight = donutSpace + repoStats.languages.length * 20 + 30;
+    // Dependencies widget height: base + 40px per row
     const depRows = repoStats.dependencies && repoStats.dependencies.length > 0 && repoStats.dependencies[0].name !== 'Not specified'
       ? Math.ceil(repoStats.dependencies.length / 2)
       : 1;
     const depWidgetHeight = 50 + depRows * 40 + 40;
-    // Calculate total SVG height (rough estimate, adjust as needed)
-    const svgHeight = 40 + 140 + 20 + 150 + 20 + 100 + 20 + 220 + 20 + depWidgetHeight + 20 + 200 + 20 + 120 + 20 + 160;
+    const commitWidgetHeight = 200;
+    const prWidgetHeight = 120;
+    const issuesWidgetHeight = 160;
+    // Spacing between widgets
+    const gap = 30;
+    // Calculate Y positions
+    const statsY = 10;
+    const timelineY = statsY + statsWidgetHeight + gap;
+    const licenseY = timelineY + timelineWidgetHeight + gap;
+    const langY = licenseY + licenseWidgetHeight + gap;
+    const depY = langY + langWidgetHeight + gap;
+    const commitY = depY + depWidgetHeight + gap;
+    const prY = commitY + commitWidgetHeight + gap;
+    const issuesY = prY + prWidgetHeight + gap;
+  // Calculate total SVG height
+  const extraSpace = 50;
+  const svgHeight = issuesY + issuesWidgetHeight + gap + extraSpace;
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
     <svg viewBox="0 0 440 ${svgHeight}" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="auto" style="display:block;overflow:auto;">
       <text x="30" y="28" font-size="18" font-family="Arial" fill="#2f80ed" font-weight="bold">📊 Repository Stats</text>
       <g transform="translate(0, 40)">
         <!-- Stats Counter Widget -->
-        <g transform="translate(10, 10)">
-          <rect width="420" height="140" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
+        <g transform="translate(10, ${statsY})">
+          <rect width="420" height="${statsWidgetHeight}" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
           <rect x="20" y="30" width="110" height="80" rx="10" fill="url(#gradStar)"/>
           <text x="40" y="65" font-size="22" font-weight="bold" font-family="Arial" fill="#fff">⭐ ${repoStats.stars}</text>
           <text x="40" y="90" font-size="13" font-family="Arial" fill="#fff">Stars</text>
@@ -37,8 +59,8 @@ export default async function handler(req, res) {
           <text x="310" y="90" font-size="13" font-family="Arial" fill="#fff">Watchers</text>
         </g>
         <!-- Timeline Widget -->
-        <g transform="translate(10, 160)">
-          <rect width="420" height="150" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
+        <g transform="translate(10, ${timelineY})">
+          <rect width="420" height="${timelineWidgetHeight}" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
           <text x="20" y="30" font-size="18" font-family="Arial" fill="#2f80ed" font-weight="bold">📅 Repository Timeline</text>
           <circle cx="30" cy="70" r="6" fill="#4caf50"/>
           <text x="50" y="75" font-size="15" font-family="Arial" fill="#434d58">Created: ${repoStats.createdAt}</text>
@@ -46,15 +68,15 @@ export default async function handler(req, res) {
           <text x="50" y="110" font-size="15" font-family="Arial" fill="#434d58">Last Updated: ${repoStats.updatedAt}</text>
         </g>
         <!-- License Widget -->
-        <g transform="translate(10, 320)">
-          <rect width="420" height="100" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
+        <g transform="translate(10, ${licenseY})">
+          <rect width="420" height="${licenseWidgetHeight}" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
           <text x="20" y="35" font-size="18" font-family="Arial" fill="#2f80ed" font-weight="bold">📜 License</text>
           <rect x="20" y="55" width="140" height="28" rx="6" fill="#4c71f2"/>
           <text x="40" y="75" font-size="15" font-family="Arial" fill="#fff" font-weight="bold">${repoStats.license}</text>
         </g>
         <!-- Language Usage Widget -->
-        <g transform="translate(10, 430)">
-          <rect width="420" height="220" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
+        <g transform="translate(10, ${langY})">
+          <rect width="420" height="${langWidgetHeight}" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
           <text x="20" y="30" font-size="18" font-family="Arial" fill="#2f80ed" font-weight="bold">📊 Language Usage</text>
           <circle cx="160" cy="120" r="70" fill="none" stroke="#e4e2e2" stroke-width="20"/>
           <!-- Dynamic language arcs and legend -->
@@ -71,14 +93,14 @@ export default async function handler(req, res) {
           }).join('')}
         </g>
         <!-- Dependencies Widget -->
-        <g transform="translate(10, 660)">
+        <g transform="translate(10, ${depY})">
           <rect width="420" height="${depWidgetHeight}" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
           <text x="20" y="30" font-size="18" font-family="Arial" fill="#2f80ed" font-weight="bold">📦 Dependencies</text>
           <g font-family="Arial" font-size="14" fill="#434d58">
             ${(() => {
               if (!repoStats.dependencies || repoStats.dependencies.length === 0 ||
                   (repoStats.dependencies.length === 1 && repoStats.dependencies[0].name === 'Not specified')) {
-                return `<text x="20" y="70">Not defined</text>`;
+                return `<text x="20" y="70" style="font-size:13px;fill:#d32f2f;">Not defined</text>`;
               }
               // Dynamic layout: max 2 per row, dynamic box width
               const startX = 20;
@@ -98,7 +120,7 @@ export default async function handler(req, res) {
                   rowItems = 0;
                 }
                 out += `<rect x="${x}" y="${y}" width="${boxWidth}" height="24" fill="#e4e2e2" rx="6"/>
-                <text x="${x + boxWidth/2}" y="${y+17}" text-anchor="middle">${text}</text>`;
+                <text x="${x + boxWidth/2}" y="${y+17}" text-anchor="middle" style="font-size:13px;fill:#434d58;">${text}</text>`;
                 x += boxWidth + 20; // 20px gap between boxes
                 rowItems++;
               });
@@ -107,8 +129,8 @@ export default async function handler(req, res) {
           </g>
         </g>
         <!-- Commit Activity Widget -->
-        <g transform="translate(10, 850)">
-          <rect width="420" height="200" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
+        <g transform="translate(10, ${commitY})">
+          <rect width="420" height="${commitWidgetHeight}" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
           <text x="20" y="30" font-size="18" font-family="Arial" fill="#2f80ed" font-weight="bold">📈 Commit Activity</text>
           <line x1="50" y1="150" x2="380" y2="150" stroke="#e4e2e2" stroke-width="2"/>
           ${rotatedCommits.map((val, i) => {
@@ -119,8 +141,8 @@ export default async function handler(req, res) {
           ${rotatedDays.map((d, i) => `<text x='${60 + i * 40}' y='170' font-size='12' font-family='Arial' fill='#434d58'>${d}</text>`).join('')}
         </g>
         <!-- PR Merge Time Widget -->
-        <g transform="translate(10, 1060)">
-          <rect width="420" height="120" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
+        <g transform="translate(10, ${prY})">
+          <rect width="420" height="${prWidgetHeight}" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
           <text x="20" y="30" font-size="18" font-family="Arial" fill="#2f80ed" font-weight="bold">🕐 Avg PR Merge Time</text>
           <circle cx="80" cy="75" r="25" fill="none" stroke="#4c71f2" stroke-width="4"/>
           <line x1="80" y1="75" x2="80" y2="60" stroke="#2f80ed" stroke-width="3"/>
@@ -128,8 +150,8 @@ export default async function handler(req, res) {
           <text x="130" y="82" font-size="18" font-family="Arial" fill="#434d58" font-weight="bold">${repoStats.prMergeTime} days</text>
         </g>
         <!-- Issues Widget -->
-        <g transform="translate(10, 1190)">
-          <rect width="420" height="160" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
+        <g transform="translate(10, ${issuesY})">
+          <rect width="420" height="${issuesWidgetHeight}" fill="#fffefe" stroke="#e4e2e2" rx="16" ry="16"/>
           <text x="20" y="30" font-size="18" font-family="Arial" fill="#2f80ed" font-weight="bold">🧵 Issues</text>
           <rect x="20" y="60" width="220" height="20" fill="#4caf50" rx="6"/>
           <text x="250" y="75" font-size="14" fill="#434d58">Open (${repoStats.issues.open})</text>
