@@ -1,0 +1,19 @@
+name: Auto Issue Labeler
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  labeler:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write   # Required to add labels
+
+    steps:
+      - name: Run Issue Labeler
+        uses: github/issue-labeler@v3
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          configuration-path: .github/labeler-issues.yml
+          enable-versioned-regex: 0

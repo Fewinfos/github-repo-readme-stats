@@ -1,0 +1,11 @@
+bug:
+  - '(?i)bug'
+
+enhancement:
+  - '(?i)feature|enhancement'
+
+documentation:
+  - '(?i)doc|documentation'
+
+testing:
+  - '(?i)test'
