@@ -1,3 +1,7 @@
+// Load environment variables from .env file for local development
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+
 // Language colors from GitHub
 const LANGUAGE_COLORS = {
   JavaScript: '#f1e05a',
@@ -79,6 +83,104 @@ const THEMES = {
   }
 };
 
+// GraphQL query to fetch all repository data in a single call
+const REPO_QUERY = `
+query RepoData($owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
+    name
+    description
+    url
+    homepageUrl
+    isArchived
+    isFork
+    createdAt
+    updatedAt
+    pushedAt
+    stargazerCount
+    forkCount
+    primaryLanguage {
+      name
+      color
+    }
+    licenseInfo {
+      name
+      spdxId
+    }
+    watchers {
+      totalCount
+    }
+    issues(states: [OPEN]) {
+      totalCount
+    }
+    closedIssues: issues(states: [CLOSED]) {
+      totalCount
+    }
+    allIssues: issues(first: 30, orderBy: {field: CREATED_AT, direction: DESC}) {
+      nodes {
+        state
+        createdAt
+        comments {
+          totalCount
+        }
+      }
+    }
+    pullRequests(states: [OPEN]) {
+      totalCount
+    }
+    closedPullRequests: pullRequests(states: [CLOSED, MERGED]) {
+      totalCount
+    }
+    mergedPullRequests: pullRequests(states: [MERGED]) {
+      totalCount
+    }
+    recentPRs: pullRequests(first: 30, orderBy: {field: CREATED_AT, direction: DESC}) {
+      nodes {
+        state
+        createdAt
+        mergedAt
+        comments {
+          totalCount
+        }
+      }
+    }
+    languages(first: 10, orderBy: {field: SIZE, direction: DESC}) {
+      edges {
+        size
+        node {
+          name
+          color
+        }
+      }
+      totalSize
+    }
+    releases(first: 10, orderBy: {field: CREATED_AT, direction: DESC}) {
+      nodes {
+        tagName
+        name
+        publishedAt
+        isPrerelease
+      }
+    }
+    defaultBranchRef {
+      target {
+        ... on Commit {
+          history(first: 100) {
+            nodes {
+              message
+              committedDate
+              author {
+                user {
+                  login
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}`;
+
 module.exports = async (req, res) => {
   try {
     const { username, repo, theme = 'light' } = req.query;
@@ -91,111 +193,151 @@ module.exports = async (req, res) => {
       );
     }
 
-    // Build headers with optional GitHub token
-    const headers = {
-      'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'GitHub-Repo-Card'
-    };
-    
-    // Support GitHub token from environment for higher rate limits
+    // GitHub token is required for GraphQL API
     const githubToken = process.env.GITHUB_TOKEN;
-    if (githubToken) {
-      headers['Authorization'] = `Bearer ${githubToken}`;
+    if (!githubToken) {
+      return res.status(500).send(
+        generateErrorSVG('GitHub token required for API access', selectedTheme)
+      );
     }
 
-    // Fetch repository data from GitHub API
-    const apiUrl = `https://api.github.com/repos/${username}/${repo}`;
-    const response = await fetch(apiUrl, { headers });
+    // Fetch all repository data with a single GraphQL call
+    const graphqlResponse = await fetch('https://api.github.com/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${githubToken}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'GitHub-Repo-Card'
+      },
+      body: JSON.stringify({
+        query: REPO_QUERY,
+        variables: { owner: username, name: repo }
+      })
+    });
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        return res.status(404).send(
-          generateErrorSVG('Repository not found', selectedTheme)
+    if (!graphqlResponse.ok) {
+      if (graphqlResponse.status === 401) {
+        return res.status(401).send(
+          generateErrorSVG('Invalid GitHub token', selectedTheme)
         );
       }
-      if (response.status === 403) {
+      if (graphqlResponse.status === 403) {
         return res.status(403).send(
           generateErrorSVG('API rate limit exceeded', selectedTheme)
         );
       }
-      throw new Error(`GitHub API error: ${response.status}`);
+      throw new Error(`GitHub API error: ${graphqlResponse.status}`);
     }
 
-    const data = await response.json();
+    const graphqlResult = await graphqlResponse.json();
 
-    // Fetch additional data in parallel for comprehensive analysis
-    const [contributorsData, languagesData, releasesData, commitsData, pullRequestsData, issuesData, recentPRs, recentIssues, recentCommits, closedIssues, mergedPRs, closedPRs] = await Promise.all([
-      fetch(`https://api.github.com/repos/${username}/${repo}/contributors?per_page=100`, { headers })
-        .then(r => r.ok ? r.json() : [])
-        .catch(() => []),
-      fetch(`https://api.github.com/repos/${username}/${repo}/languages`, { headers })
-        .then(r => r.ok ? r.json() : {})
-        .catch(() => ({})),
-      fetch(`https://api.github.com/repos/${username}/${repo}/releases?per_page=10`, { headers })
-        .then(r => r.ok ? r.json() : [])
-        .catch(() => []),
-      fetch(`https://api.github.com/repos/${username}/${repo}/stats/participation`, { headers })
-        .then(r => r.ok ? r.json() : null)
-        .catch(() => null),
-      fetch(`https://api.github.com/repos/${username}/${repo}/pulls?state=all&per_page=1`, { headers })
-        .then(r => r.ok ? r.headers.get('Link') : null)
-        .catch(() => null),
-      fetch(`https://api.github.com/repos/${username}/${repo}/issues?state=all&per_page=1`, { headers })
-        .then(r => r.ok ? r.headers.get('Link') : null)
-        .catch(() => null),
-      fetch(`https://api.github.com/repos/${username}/${repo}/pulls?state=all&per_page=30&sort=created&direction=desc`, { headers })
-        .then(r => r.ok ? r.json() : [])
-        .catch(() => []),
-      fetch(`https://api.github.com/repos/${username}/${repo}/issues?state=all&per_page=30&sort=created&direction=desc`, { headers })
-        .then(r => r.ok ? r.json() : [])
-        .catch(() => []),
-      fetch(`https://api.github.com/repos/${username}/${repo}/commits?per_page=100`, { headers })
-        .then(r => r.ok ? r.json() : [])
-        .catch(() => []),
-      fetch(`https://api.github.com/repos/${username}/${repo}/issues?state=closed&per_page=30`, { headers })
-        .then(r => r.ok ? r.json() : [])
-        .catch(() => []),
-      fetch(`https://api.github.com/repos/${username}/${repo}/pulls?state=closed&per_page=30`, { headers })
-        .then(r => r.ok ? r.json() : [])
-        .catch(() => []),
-      fetch(`https://api.github.com/repos/${username}/${repo}/pulls?state=closed&per_page=1`, { headers })
-        .then(r => r.ok ? r.headers.get('Link') : null)
-        .catch(() => null)
-    ]);
+    if (graphqlResult.errors) {
+      const errorMsg = graphqlResult.errors[0]?.message || 'GraphQL error';
+      if (errorMsg.includes('Could not resolve')) {
+        return res.status(404).send(
+          generateErrorSVG('Repository not found', selectedTheme)
+        );
+      }
+      throw new Error(errorMsg);
+    }
 
-    // Calculate commit activity
+    const gqlRepo = graphqlResult.data.repository;
+    if (!gqlRepo) {
+      return res.status(404).send(
+        generateErrorSVG('Repository not found', selectedTheme)
+      );
+    }
+
+    // Transform GraphQL data to match the expected format
+    const data = {
+      name: gqlRepo.name,
+      description: gqlRepo.description,
+      html_url: gqlRepo.url,
+      homepage: gqlRepo.homepageUrl,
+      archived: gqlRepo.isArchived,
+      fork: gqlRepo.isFork,
+      created_at: gqlRepo.createdAt,
+      updated_at: gqlRepo.updatedAt,
+      pushed_at: gqlRepo.pushedAt,
+      stargazers_count: gqlRepo.stargazerCount,
+      forks_count: gqlRepo.forkCount,
+      language: gqlRepo.primaryLanguage?.name || null,
+      license: gqlRepo.licenseInfo ? { name: gqlRepo.licenseInfo.name, spdx_id: gqlRepo.licenseInfo.spdxId } : null,
+      watchers_count: gqlRepo.watchers.totalCount,
+      open_issues_count: gqlRepo.issues.totalCount
+    };
+
+    // Fetch contributors from REST API (GraphQL doesn't provide contributor stats)
+    const contributorsResponse = await fetch(
+      `https://api.github.com/repos/${username}/${repo}/contributors?per_page=10`,
+      {
+        headers: {
+          'Authorization': `Bearer ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'GitHub-Repo-Card'
+        }
+      }
+    );
+    const contributorsData = contributorsResponse.ok ? await contributorsResponse.json() : [];
+
+    const languagesData = {};
+    gqlRepo.languages.edges.forEach(edge => {
+      languagesData[edge.node.name] = edge.size;
+    });
+
+    const releasesData = gqlRepo.releases.nodes.map(release => ({
+      tag_name: release.tagName,
+      name: release.name,
+      published_at: release.publishedAt,
+      prerelease: release.isPrerelease
+    }));
+
+    // Extract commit data
+    const commits = gqlRepo.defaultBranchRef?.target?.history?.nodes || [];
+    const recentCommits = commits.map(commit => ({
+      commit: { message: commit.message, committedDate: commit.committedDate },
+      author: commit.author?.user ? { login: commit.author.user.login } : null
+    }));
+
+    // Extract PR and issue data
+    const recentPRs = gqlRepo.recentPRs.nodes.map(pr => ({
+      state: pr.state.toLowerCase(),
+      created_at: pr.createdAt,
+      merged_at: pr.mergedAt,
+      comments: pr.comments.totalCount
+    }));
+
+    const recentIssues = gqlRepo.allIssues.nodes.map(issue => ({
+      state: issue.state.toLowerCase(),
+      created_at: issue.createdAt,
+      comments: issue.comments.totalCount,
+      pull_request: false
+    }));
+
+    // Calculate totals from GraphQL data
+    const totalPullRequests = gqlRepo.pullRequests.totalCount + gqlRepo.closedPullRequests.totalCount;
+    const totalIssues = gqlRepo.issues.totalCount + gqlRepo.closedIssues.totalCount;
+    const mergedPRsCount = gqlRepo.mergedPullRequests.totalCount;
+    const closedIssuesCount = gqlRepo.closedIssues.totalCount;
+
+    // Calculate commit activity based on recent commits
     let commitActivity = 'unknown';
-    if (commitsData && commitsData.all) {
-      const recentWeeks = commitsData.all.slice(-4);
-      const totalRecent = recentWeeks.reduce((a, b) => a + b, 0);
-      if (totalRecent === 0) commitActivity = 'low';
-      else if (totalRecent < 10) commitActivity = 'low';
-      else if (totalRecent < 30) commitActivity = 'medium';
+    if (recentCommits.length > 0) {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const recentCommitCount = recentCommits.filter(c => 
+        c.commit?.committedDate ? new Date(c.commit.committedDate) > thirtyDaysAgo : false
+      ).length;
+      if (recentCommitCount === 0) commitActivity = 'low';
+      else if (recentCommitCount < 10) commitActivity = 'low';
+      else if (recentCommitCount < 30) commitActivity = 'medium';
       else commitActivity = 'high';
     }
 
-    // Parse total pull requests from Link header
-    let totalPullRequests = 0;
-    if (pullRequestsData) {
-      const match = pullRequestsData.match(/page=(\d+)>; rel="last"/);
-      totalPullRequests = match ? parseInt(match[1]) : 0;
-    }
-
-    // Parse total issues from Link header
-    let totalIssues = 0;
-    if (issuesData) {
-      const match = issuesData.match(/page=(\d+)>; rel="last"/);
-      totalIssues = match ? parseInt(match[1]) : 0;
-    }
-
     // Calculate PR Merge Rate
-    const totalClosedPRs = closedPRs ? (closedPRs.match(/page=(\d+)>; rel="last"/) ? parseInt(closedPRs.match(/page=(\d+)>; rel="last"/)[1]) : mergedPRs.filter(pr => pr.merged_at).length) : 0;
-    const mergedPRsCount = mergedPRs.filter(pr => pr.merged_at).length;
-    const prMergeRate = totalPullRequests > 0 ? ((mergedPRsCount / Math.min(30, totalPullRequests)) * 100).toFixed(0) : 0;
+    const prMergeRate = totalPullRequests > 0 ? Math.min(100, Math.floor((mergedPRsCount / totalPullRequests) * 100)) : 0;
 
     // Calculate Issue Close Rate
-    const closedIssuesCount = closedIssues.length;
-    const issueCloseRate = totalIssues > 0 ? ((closedIssuesCount / Math.min(30, totalIssues)) * 100).toFixed(0) : 0;
+    const issueCloseRate = totalIssues > 0 ? Math.min(100, Math.floor((closedIssuesCount / totalIssues) * 100)) : 0;
 
     // Calculate Average Time to Merge (for recent PRs)
     let avgTimeToMerge = 'N/A';
@@ -475,14 +617,12 @@ function generateRepoSVG(data, theme) {
   // Calculate total height dynamically based on content
   const headerHeight = 100;
   const descSection = descLines.length > 0 ? descHeight + 20 : 0;
-  const metricsSection = 180;
-  const advancedMetricsSection = 250; // New section for advanced analytics
-  const languagesSection = data.languages.length > 0 ? 120 : 0;
+  const advancedMetricsSection = 180; // 8 metrics in 4 rows at 35px each + header (30px) + padding (20px)
   const contributorsSection = data.topContributors.length > 0 ? 100 : 0;
   const topicsSection = data.topics.length > 0 ? 50 : 0;
   const footerSection = 60;
   
-  const height = padding + headerHeight + descSection + metricsSection + advancedMetricsSection + languagesSection + contributorsSection + topicsSection + footerSection + padding;
+  const height = padding + headerHeight + descSection + advancedMetricsSection + contributorsSection + topicsSection + footerSection + padding;
 
   // Activity indicator colors
   const activityColors = {
@@ -503,10 +643,6 @@ function generateRepoSVG(data, theme) {
   // Start SVG
   let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:${theme.title};stop-opacity:0.1" />
-      <stop offset="100%" style="stop-color:${theme.title};stop-opacity:0" />
-    </linearGradient>
     <filter id="shadow">
       <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.1"/>
     </filter>
@@ -515,9 +651,6 @@ function generateRepoSVG(data, theme) {
   <!-- Background -->
   <rect width="${width}" height="${height}" fill="${theme.bg}" rx="16"/>
   <rect x="1" y="1" width="${width - 2}" height="${height - 2}" fill="none" stroke="${theme.border}" stroke-width="1" rx="16"/>
-  
-  <!-- Decorative Header Background -->
-  <rect x="0" y="0" width="${width}" height="140" fill="url(#headerGradient)" rx="16"/>
   
   <!-- Header Section -->
   <g transform="translate(${leftColumn}, ${yPos})">
@@ -529,17 +662,8 @@ function generateRepoSVG(data, theme) {
       
       <!-- Badges Row -->
       <g transform="translate(${Math.min(data.owner.length * 8 + 12, 150)}, -3)">
-        <!-- Visibility Badge -->
-        ${data.isPrivate ? `
-        <rect width="55" height="20" fill="${theme.privateBg}" stroke="${theme.privateBorder}" stroke-width="1" rx="10"/>
-        <text x="27.5" y="14" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-weight="600" fill="${theme.privateText}" text-anchor="middle">🔒 Private</text>
-        ` : `
-        <rect width="50" height="20" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="10"/>
-        <text x="25" y="14" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-weight="500" fill="${theme.textSecondary}" text-anchor="middle">Public</text>
-        `}
-        
         ${data.archived ? `
-        <g transform="translate(58, 0)">
+        <g>
           <rect width="65" height="20" fill="${theme.staleBg}" stroke="${theme.staleBorder}" stroke-width="1" rx="10"/>
           <text x="32.5" y="14" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" font-weight="600" fill="${theme.staleText}" text-anchor="middle">📦 Archived</text>
         </g>` : ''}
