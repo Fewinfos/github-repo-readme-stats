@@ -615,114 +615,6 @@ function generateRepoSVG(data, theme) {
     yPos += descHeight + 20;
   }
 
-  // Main Metrics Section - Two Columns
-  svg += `
-  <!-- METRICS GRID -->
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <text y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="${theme.textMuted}" letter-spacing="1">
-      KEY METRICS
-    </text>
-  </g>`;
-
-  yPos += 30;
-
-  // Left Column Metrics
-  svg += `
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <!-- Stars -->
-    <g>
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="${ICONS.star}" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">STARS</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="${theme.text}">
-        ${escapeXml(data.starsFormatted)}
-      </text>
-    </g>
-    
-    <!-- Forks -->
-    <g transform="translate(220, 0)">
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="${ICONS.fork}" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">FORKS</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="${theme.text}">
-        ${escapeXml(data.forksFormatted)}
-      </text>
-    </g>
-  </g>
-  
-  <!-- Right Column Metrics -->
-  <g transform="translate(${rightColumn}, ${yPos})">
-    <!-- Watchers -->
-    <g>
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="${ICONS.eye}" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">WATCHERS</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="${theme.text}">
-        ${escapeXml(data.watchersFormatted)}
-      </text>
-    </g>
-    
-    <!-- Issues -->
-    <g transform="translate(220, 0)">
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="${ICONS.issue}" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">ISSUES</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="${theme.text}">
-        ${escapeXml(data.issuesFormatted)}
-      </text>
-    </g>
-  </g>`;
-
-  yPos += 90;
-
-  // Second Row of Metrics
-  svg += `
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <!-- Pull Requests -->
-    <g>
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.251 2.251 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">PULL REQUESTS</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="${theme.text}">
-        ${escapeXml(data.pullRequestsFormatted || '0')}
-      </text>
-    </g>
-    
-    <!-- Contributors -->
-    <g transform="translate(220, 0)">
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="M2 5.5a3.5 3.5 0 115.898 2.549 5.507 5.507 0 013.034 4.084.75.75 0 11-1.482.235 4 4 0 00-7.9 0 .75.75 0 01-1.482-.236A5.507 5.507 0 013.102 8.05 3.49 3.49 0 012 5.5zM11 4a.75.75 0 100 1.5 1.5 1.5 0 01.666 2.844.75.75 0 00-.416.672v.352a.75.75 0 00.574.73c1.2.289 2.162 1.2 2.522 2.372a.75.75 0 101.434-.44 5.01 5.01 0 00-2.56-3.012A3 3 0 0011 4z" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">CONTRIBUTORS</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="${theme.text}">
-        ${escapeXml(data.contributorsFormatted)}
-      </text>
-    </g>
-  </g>
-  
-  <g transform="translate(${rightColumn}, ${yPos})">
-    <!-- Size -->
-    <g>
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="${ICONS.database}" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">SIZE</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" font-weight="700" fill="${theme.text}">
-        ${escapeXml(data.sizeFormatted)}
-      </text>
-    </g>
-    
-    <!-- Created -->
-    <g transform="translate(220, 0)">
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="M1.75 3.5a.25.25 0 00-.25.25v8.5c0 .138.112.25.25.25h12.5a.25.25 0 00.25-.25v-8.5a.25.25 0 00-.25-.25H1.75zM0 3.75C0 2.784.784 2 1.75 2h12.5c.966 0 1.75.784 1.75 1.75v8.5A1.75 1.75 0 0114.25 14H1.75A1.75 1.75 0 010 12.25v-8.5zm5.25 4a.75.75 0 00-.75.75v.5a.75.75 0 001.5 0v-.5a.75.75 0 00-.75-.75zm3 0a.75.75 0 00-.75.75v.5a.75.75 0 001.5 0v-.5a.75.75 0 00-.75-.75zm2.25.75a.75.75 0 011.5 0v.5a.75.75 0 01-1.5 0v-.5z" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">CREATED</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="${theme.text}">
-        ${escapeXml(data.createdAt)}
-      </text>
-    </g>
-  </g>`;
-
-  yPos += 90;
-
   // Advanced Analytics Section
   svg += `
   <!-- ADVANCED ANALYTICS -->
@@ -734,146 +626,44 @@ function generateRepoSVG(data, theme) {
 
   yPos += 30;
 
+  // Create metrics array for two-column list
+  const metrics = [
+    { icon: ICONS.graph, label: 'PR MERGE RATE', value: `${data.prMergeRate}%` },
+    { icon: ICONS.check, label: 'ISSUE CLOSE RATE', value: `${data.issueCloseRate}%` },
+    { icon: ICONS.clock, label: 'AVG TIME TO MERGE', value: data.avgTimeToMerge },
+    { icon: 'M1.75 1A1.75 1.75 0 000 2.75v8.5C0 12.216.784 13 1.75 13H3v1.543a1.457 1.457 0 002.487 1.03L8.61 12.5h5.64c.966 0 1.75-.784 1.75-1.75v-8.5A1.75 1.75 0 0014.25 1H1.75zM1.5 2.75a.25.25 0 01.25-.25h12.5a.25.25 0 01.25.25v8.5a.25.25 0 01-.25.25h-6.5a.75.75 0 00-.53.22L4.5 14.44v-2.19a.75.75 0 00-.75-.75h-2a.25.25 0 01-.25-.25v-8.5z', label: 'DISCUSSION/ITEM', value: data.discussionActivity },
+    { icon: ICONS.shield, label: 'BUS FACTOR', value: data.busFactor },
+    { icon: ICONS.zap, label: 'GROWTH TREND', value: data.growthTrend },
+    { icon: ICONS.tag, label: 'RELEASE CADENCE', value: data.releaseCadence },
+    { icon: 'M1.5 2.75a.25.25 0 01.25-.25h8.5a.25.25 0 01.25.25v8.5a.25.25 0 01-.25.25h-8.5a.25.25 0 01-.25-.25v-8.5zM1.75 1A1.75 1.75 0 000 2.75v8.5C0 12.216.784 13 1.75 13h8.5c.966 0 1.75-.784 1.75-1.75v-8.5A1.75 1.75 0 0010.25 1h-8.5zM13 3.5v7a.5.5 0 001 0v-7a.5.5 0 00-1 0zm2-2v11a.5.5 0 001 0v-11a.5.5 0 00-1 0z', label: 'STALE ISSUES', value: String(data.staleIssuesCount) }
+  ];
+
   svg += `
-  <!-- PR & Issue Analytics -->
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <g>
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="${ICONS.graph}" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">PR MERGE RATE</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="${theme.text}">
-        ${escapeXml(data.prMergeRate)}%
-      </text>
-    </g>
-    
-    <g transform="translate(220, 0)">
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="${ICONS.check}" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">ISSUE CLOSE RATE</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="${theme.text}">
-        ${escapeXml(data.issueCloseRate)}%
-      </text>
-    </g>
-  </g>
-  
-  <g transform="translate(${rightColumn}, ${yPos})">
-    <g>
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="${ICONS.clock}" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">AVG TIME TO MERGE</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="${theme.text}">
-        ${escapeXml(data.avgTimeToMerge)}
-      </text>
-    </g>
-    
-    <g transform="translate(220, 0)">
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="M1.75 1A1.75 1.75 0 000 2.75v8.5C0 12.216.784 13 1.75 13H3v1.543a1.457 1.457 0 002.487 1.03L8.61 12.5h5.64c.966 0 1.75-.784 1.75-1.75v-8.5A1.75 1.75 0 0014.25 1H1.75zM1.5 2.75a.25.25 0 01.25-.25h12.5a.25.25 0 01.25.25v8.5a.25.25 0 01-.25.25h-6.5a.75.75 0 00-.53.22L4.5 14.44v-2.19a.75.75 0 00-.75-.75h-2a.25.25 0 01-.25-.25v-8.5z" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">DISCUSSION/ITEM</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="${theme.text}">
-        ${escapeXml(data.discussionActivity)}
-      </text>
-    </g>
-  </g>`;
-
-  yPos += 90;
-
-  // Code Quality & Community Health
-  svg += `
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <g>
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="${ICONS.shield}" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">BUS FACTOR</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="${theme.text}">
-        ${escapeXml(data.busFactor)}
-      </text>
-    </g>
-    
-    <g transform="translate(220, 0)">
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="${ICONS.zap}" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">GROWTH TREND</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="${theme.text}">
-        ${escapeXml(data.growthTrend)}
-      </text>
-    </g>
-  </g>
-  
-  <g transform="translate(${rightColumn}, ${yPos})">
-    <g>
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="${ICONS.tag}" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">RELEASE CADENCE</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" font-weight="700" fill="${theme.text}">
-        ${escapeXml(data.releaseCadence)}
-      </text>
-    </g>
-    
-    <g transform="translate(220, 0)">
-      <rect width="200" height="70" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="8" filter="url(#shadow)"/>
-      <path d="M1.5 2.75a.25.25 0 01.25-.25h8.5a.25.25 0 01.25.25v8.5a.25.25 0 01-.25.25h-8.5a.25.25 0 01-.25-.25v-8.5zM1.75 1A1.75 1.75 0 000 2.75v8.5C0 12.216.784 13 1.75 13h8.5c.966 0 1.75-.784 1.75-1.75v-8.5A1.75 1.75 0 0010.25 1h-8.5zM13 3.5v7a.5.5 0 001 0v-7a.5.5 0 00-1 0zm2-2v11a.5.5 0 001 0v-11a.5.5 0 00-1 0z" fill="${theme.iconColor}" transform="translate(15, 15) scale(1.2)"/>
-      <text x="45" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">STALE ISSUES</text>
-      <text x="45" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="${theme.text}">
-        ${escapeXml(String(data.staleIssuesCount))}
-      </text>
-    </g>
-  </g>`;
-
-  yPos += 90;
-
-  // Languages Section
-  if (data.languages.length > 0) {
-    svg += `
-  <!-- LANGUAGES BREAKDOWN -->
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <text y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="${theme.textMuted}" letter-spacing="1">
-      LANGUAGES
-    </text>
-  </g>`;
-    
-    yPos += 25;
-    
-    svg += `
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <rect width="${width - padding * 2}" height="12" fill="${theme.barBg}" rx="6"/>`;
-    
-    let xOffset = 0;
-    data.languages.forEach((lang, idx) => {
-      const percentage = parseFloat(lang.percentage);
-      const barWidth = ((width - padding * 2) * percentage) / 100;
-      const rx = idx === 0 ? '6 0 0 6' : (idx === data.languages.length - 1 ? '0 6 6 0' : '0');
-      svg += `
-    <rect x="${xOffset}" width="${barWidth}" height="12" fill="${lang.color}" rx="${rx}"/>`;
-      xOffset += barWidth;
-    });
-    
-    svg += `
-  </g>`;
-    
-    yPos += 20;
-    
-    svg += `
+  <!-- Advanced Metrics List -->
   <g transform="translate(${leftColumn}, ${yPos})">`;
-    data.languages.forEach((lang, idx) => {
-      if (idx >= 5) return; // Limit to 5 languages
-      const xPos = idx * 140;
-      svg += `
-    <g transform="translate(${xPos}, 0)">
-      <circle cx="6" cy="8" r="5" fill="${lang.color}"/>
-      <text x="16" y="12" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="${theme.textSecondary}">
-        ${escapeXml(lang.name)}
+  
+  metrics.forEach((metric, idx) => {
+    const column = idx % 2;
+    const row = Math.floor(idx / 2);
+    const xPos = column * 460;
+    const yOffset = row * 35;
+    
+    svg += `
+    <g transform="translate(${xPos}, ${yOffset})">
+      <path d="${metric.icon}" fill="${theme.iconColor}" transform="scale(0.8)"/>
+      <text x="20" y="10" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">
+        ${metric.label}
       </text>
-      <text x="16" y="26" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="${theme.text}">
-        ${lang.percentage}%
+      <text x="250" y="10" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="${theme.text}" text-anchor="end">
+        ${escapeXml(metric.value)}
       </text>
     </g>`;
-    });
-    svg += `
+  });
+  
+  svg += `
   </g>`;
-    
-    yPos += 50;
-  }
+
+  yPos += Math.ceil(metrics.length / 2) * 35 + 20;
 
   // Contributors Section
   if (data.topContributors.length > 0) {
