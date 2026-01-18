@@ -2,6 +2,9 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
+// Import themes from themes folder
+const THEMES = require('../themes/index.js');
+
 // Language colors from GitHub
 const LANGUAGE_COLORS = {
   JavaScript: '#f1e05a',
@@ -35,52 +38,6 @@ const LANGUAGE_COLORS = {
   Dockerfile: '#384d54',
   Makefile: '#427819',
   default: '#8b949e'
-};
-
-// Theme configurations
-const THEMES = {
-  light: {
-    bg: '#ffffff',
-    border: '#d0d7de',
-    title: '#0969da',
-    text: '#1f2328',
-    textSecondary: '#656d76',
-    textMuted: '#8b949e',
-    badgeBg: '#f6f8fa',
-    badgeBorder: '#d0d7de',
-    privateBg: '#fff8c5',
-    privateBorder: '#d4a72c',
-    privateText: '#9a6700',
-    activeBg: '#dafbe1',
-    activeBorder: '#4ac26b',
-    activeText: '#1a7f37',
-    staleBg: '#fff8c5',
-    staleBorder: '#d4a72c',
-    staleText: '#9a6700',
-    barBg: '#eaeef2',
-    iconColor: '#656d76'
-  },
-  dark: {
-    bg: '#0d1117',
-    border: '#30363d',
-    title: '#58a6ff',
-    text: '#e6edf3',
-    textSecondary: '#8b949e',
-    textMuted: '#6e7681',
-    badgeBg: '#21262d',
-    badgeBorder: '#30363d',
-    privateBg: '#3d2e00',
-    privateBorder: '#9e6a03',
-    privateText: '#d29922',
-    activeBg: '#1b4721',
-    activeBorder: '#238636',
-    activeText: '#3fb950',
-    staleBg: '#3d2e00',
-    staleBorder: '#9e6a03',
-    staleText: '#d29922',
-    barBg: '#21262d',
-    iconColor: '#8b949e'
-  }
 };
 
 // GraphQL query to fetch all repository data in a single call
