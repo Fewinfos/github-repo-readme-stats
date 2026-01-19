@@ -247,8 +247,8 @@
       // Hide error message
       errorMessage.classList.remove('show');
 
-      // Redirect to Vercel API endpoint
-      const apiUrl = `https://readme-activity-calender.vercel.app/api?username=${encodeURIComponent(username)}&repo=${encodeURIComponent(repo)}&theme=${encodeURIComponent(theme)}`;
+      // Redirect to API endpoint (relative path)
+      const apiUrl = `/api?username=${encodeURIComponent(username)}&repo=${encodeURIComponent(repo)}&theme=${encodeURIComponent(theme)}`;
       window.location.href = apiUrl;
     });
 
