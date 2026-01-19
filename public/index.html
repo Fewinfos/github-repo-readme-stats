@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Generate beautiful SVG cards for your GitHub repositories to embed in README files">
+  <title>GitHub Repo README Stats - Fewinfos</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>📊</text></svg>">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+      background: #f6f8fa;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #1f2328;
+    }
+
+    .container {
+      background: #ffffff;
+      border-radius: 12px;
+      border: 1px solid #d0d7de;
+      box-shadow: 0 8px 24px rgba(31, 35, 40, 0.12);
+      max-width: 520px;
+      width: 100%;
+      padding: 40px;
+      animation: fadeInUp 0.5s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #d0d7de;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      color: #0969da;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .org-info {
+      font-size: 14px;
+      color: #656d76;
+      margin-top: 12px;
+    }
+
+    .org-info a {
+      color: #0969da;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .org-info a:hover {
+      color: #0550ae;
+      text-decoration: underline;
+    }
+
+    .description {
+      font-size: 15px;
+      color: #656d76;
+      line-height: 1.5;
+      margin-top: 12px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2328;
+      margin-bottom: 8px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 14px;
+      line-height: 20px;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      background: #ffffff;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #0969da;
+      box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.12);
+    }
+
+    input[type="text"]::placeholder {
+      color: #8b949e;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      background: #0969da;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      font-family: inherit;
+      margin-top: 8px;
+    }
+
+    button:hover {
+      background: #0550ae;
+    }
+
+    button:active {
+      background: #033d8b;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background: #0969da;
+    }
+
+    .error-message {
+      display: none;
+      padding: 12px 16px;
+      background: #fff8c5;
+      border: 1px solid #d4a72c;
+      border-radius: 6px;
+      color: #633c01;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .api-info {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #d0d7de;
+      font-size: 13px;
+      color: #656d76;
+    }
+
+    .api-info code {
+      background: #f6f8fa;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 12px;
+      color: #1f2328;
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 24px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>GitHub Repo README Stats</h1>
+      <div class="org-info">
+        by <a href="https://github.com/Fewinfos" target="_blank" rel="noopener">Fewinfos</a>
+        · <a href="https://github.com/Fewinfos/github-repo-readme-stats" target="_blank" rel="noopener">View on GitHub</a>
+      </div>
+      <p class="description">
+        Generate beautiful, comprehensive SVG cards for your GitHub repositories
+      </p>
+    </div>
+
+    <form id="statsForm">
+      <div class="error-message" id="errorMessage"></div>
+
+      <div class="form-group">
+        <label for="username">GitHub Username</label>
+        <input 
+          type="text" 
+          id="username" 
+          name="username" 
+          placeholder="e.g., microsoft" 
+          required
+          autocomplete="off"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="repo">Repository Name</label>
+        <input 
+          type="text" 
+          id="repo" 
+          name="repo" 
+          placeholder="e.g., vscode" 
+          required
+          autocomplete="off"
+        >
+      </div>
+
+      <button type="submit">Generate Stats Card</button>
+    </form>
+
+    <div class="api-info">
+      <strong>API Endpoint:</strong><br>
+      <code>https://readme-activity-calender.vercel.app/api?username=USER&repo=REPO</code>
+    </div>
+  </div>
+
+  <script>
+    // Form submission handler
+    document.getElementById('statsForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value.trim();
+      const repo = document.getElementById('repo').value.trim();
+      const theme = 'light';
+      const errorMessage = document.getElementById('errorMessage');
+
+      // Validation
+      if (!username || !repo) {
+        errorMessage.textContent = 'Please enter both username and repository name';
+        errorMessage.classList.add('show');
+        return;
+      }
+
+      // Basic validation for GitHub username/repo format
+      const validPattern = /^[a-zA-Z0-9._-]+$/;
+      if (!validPattern.test(username) || !validPattern.test(repo)) {
+        errorMessage.textContent = 'Invalid username or repository name format';
+        errorMessage.classList.add('show');
+        return;
+      }
+
+      // Hide error message
+      errorMessage.classList.remove('show');
+
+      // Redirect to Vercel API endpoint
+      const apiUrl = `https://readme-activity-calender.vercel.app/api?username=${encodeURIComponent(username)}&repo=${encodeURIComponent(repo)}&theme=${encodeURIComponent(theme)}`;
+      window.location.href = apiUrl;
+    });
+
+    // Hide error message when user starts typing
+    document.getElementById('username').addEventListener('input', function() {
+      document.getElementById('errorMessage').classList.remove('show');
+    });
+    
+    document.getElementById('repo').addEventListener('input', function() {
+      document.getElementById('errorMessage').classList.remove('show');
+    });
+  </script>
+</body>
+</html>
