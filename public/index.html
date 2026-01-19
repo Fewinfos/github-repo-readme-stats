@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Generate beautiful SVG cards for your GitHub repositories to embed in README files">
-  <title>GitHub Repo README Stats</title>
+  <title>Generate GitHub Repo README Stats</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>📊</text></svg>">
   <style>
     * {
@@ -29,9 +29,9 @@
       border-radius: 12px;
       border: 1px solid #d0d7de;
       box-shadow: 0 8px 24px rgba(31, 35, 40, 0.12);
-      max-width: 520px;
+      max-width: 600px;
       width: 100%;
-      padding: 40px;
+      padding: 48px;
       animation: fadeInUp 0.5s ease-out;
     }
 
@@ -46,61 +46,30 @@
       }
     }
 
-    .header {
-      text-align: center;
-      margin-bottom: 32px;
-      padding-bottom: 24px;
-      border-bottom: 1px solid #d0d7de;
-    }
-
     h1 {
-      font-size: 28px;
+      font-size: 32px;
       font-weight: 600;
-      color: #0969da;
-      margin-bottom: 8px;
-      letter-spacing: -0.02em;
-    }
-
-    .org-info {
-      font-size: 14px;
-      color: #656d76;
-      margin-top: 12px;
-    }
-
-    .org-info a {
-      color: #0969da;
-      text-decoration: none;
-      font-weight: 500;
-      transition: color 0.2s;
-    }
-
-    .org-info a:hover {
-      color: #0550ae;
-      text-decoration: underline;
-    }
-
-    .description {
-      font-size: 15px;
-      color: #656d76;
-      line-height: 1.5;
-      margin-top: 12px;
+      color: #0d1117;
+      margin-bottom: 32px;
+      text-align: left;
     }
 
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
 
     label {
       display: block;
       font-size: 14px;
       font-weight: 600;
-      color: #1f2328;
+      color: #0d1117;
       margin-bottom: 8px;
     }
 
-    input[type="text"] {
+    input[type="text"],
+    select {
       width: 100%;
-      padding: 10px 12px;
+      padding: 12px 14px;
       font-size: 14px;
       line-height: 20px;
       border: 1px solid #d0d7de;
@@ -108,9 +77,11 @@
       background: #ffffff;
       transition: border-color 0.2s, box-shadow 0.2s;
       font-family: inherit;
+      color: #0d1117;
     }
 
-    input[type="text"]:focus {
+    input[type="text"]:focus,
+    select:focus {
       outline: none;
       border-color: #0969da;
       box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.12);
@@ -120,13 +91,22 @@
       color: #8b949e;
     }
 
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23586069' d='M4.427 7.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 7H4.604a.25.25 0 00-.177.427z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
+
     button {
       width: 100%;
-      padding: 12px 20px;
+      padding: 14px 20px;
       font-size: 14px;
       font-weight: 600;
       color: white;
-      background: #0969da;
+      background: #2c5282;
       border: none;
       border-radius: 6px;
       cursor: pointer;
@@ -136,17 +116,17 @@
     }
 
     button:hover {
-      background: #0550ae;
+      background: #1e3a5f;
     }
 
     button:active {
-      background: #033d8b;
+      background: #162d4a;
     }
 
     button:disabled {
       opacity: 0.6;
       cursor: not-allowed;
-      background: #0969da;
+      background: #2c5282;
     }
 
     .error-message {
@@ -166,27 +146,18 @@
 
     @media (max-width: 640px) {
       .container {
-        padding: 24px;
+        padding: 32px 24px;
       }
 
       h1 {
-        font-size: 24px;
+        font-size: 28px;
       }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <h1>GitHub Repo README Stats</h1>
-      <div class="org-info">
-        by <a href="https://github.com/Fewinfos" target="_blank" rel="noopener">Fewinfos</a>
-        · <a href="https://github.com/Fewinfos/github-repo-readme-stats" target="_blank" rel="noopener">View on GitHub</a>
-      </div>
-      <p class="description">
-        Generate beautiful, comprehensive SVG cards for your GitHub repositories
-      </p>
-    </div>
+    <h1>Generate GitHub Repo README Stats</h1>
 
     <form id="statsForm">
       <div class="error-message" id="errorMessage"></div>
@@ -197,7 +168,7 @@
           type="text" 
           id="username" 
           name="username" 
-          placeholder="e.g., microsoft" 
+          placeholder="fewinfos" 
           required
           autocomplete="off"
         >
@@ -209,13 +180,29 @@
           type="text" 
           id="repo" 
           name="repo" 
-          placeholder="e.g., vscode" 
+          placeholder="github-repo-readme-stats" 
           required
           autocomplete="off"
         >
       </div>
 
-      <button type="submit">Generate Stats Card</button>
+      <div class="form-group">
+        <label for="theme">Theme</label>
+        <select id="theme" name="theme">
+          <option value="light">light – Clean GitHub light theme</option>
+          <option value="dark">dark – GitHub dark theme</option>
+          <option value="dracula">dracula – Dracula theme</option>
+          <option value="nord">nord – Nord theme</option>
+          <option value="monokai">monokai – Monokai theme</option>
+          <option value="gruvbox">gruvbox – Gruvbox theme</option>
+          <option value="solarized">solarized – Solarized dark theme</option>
+          <option value="tokyonight">tokyonight – Tokyo Night theme</option>
+          <option value="catppuccin">catppuccin – Catppuccin theme</option>
+          <option value="ocean">ocean – Ocean theme</option>
+        </select>
+      </div>
+
+      <button type="submit">Generate</button>
     </form>
   </div>
 
@@ -226,7 +213,7 @@
       
       const username = document.getElementById('username').value.trim();
       const repo = document.getElementById('repo').value.trim();
-      const theme = 'light';
+      const theme = document.getElementById('theme').value;
       const errorMessage = document.getElementById('errorMessage');
 
       // Validation
