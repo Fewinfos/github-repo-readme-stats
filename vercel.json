@@ -11,7 +11,7 @@
   "routes": [
     {
       "src": "/",
-      "dest": "api/home.js"
+      "dest": "/public/index.html"
     },
     {
       "src": "/api",
