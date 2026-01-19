@@ -3,23 +3,16 @@
   "functions": {
     "api/index.js": {
       "memory": 128
-    },
-    "api/home.js": {
-      "memory": 128
     }
   },
   "routes": [
     {
+      "src": "/api",
+      "dest": "/api/index.js"
+    },
+    {
       "src": "/",
       "dest": "/public/index.html"
-    },
-    {
-      "src": "/api",
-      "dest": "api/index.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "api/index.js"
     }
   ]
 }
