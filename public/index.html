@@ -216,17 +216,9 @@
       const theme = document.getElementById('theme').value;
       const errorMessage = document.getElementById('errorMessage');
 
-      // Validation
+      // Validation: require both fields to be non-empty
       if (!username || !repo) {
         errorMessage.textContent = 'Please enter both username and repository name';
-        errorMessage.classList.add('show');
-        return;
-      }
-
-      // Basic validation for GitHub username/repo format
-      const validPattern = /^[a-zA-Z0-9._-]+$/;
-      if (!validPattern.test(username) || !validPattern.test(repo)) {
-        errorMessage.textContent = 'Invalid username or repository name format';
         errorMessage.classList.add('show');
         return;
       }
