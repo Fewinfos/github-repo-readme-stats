@@ -217,6 +217,7 @@
       const repo = document.getElementById('repo').value.trim();
       const theme = document.getElementById('theme').value;
       const errorMessage = document.getElementById('errorMessage');
+      const submitButton = this.querySelector('button[type="submit"]');
 
       // Validation: require both fields to be non-empty
       if (!username || !repo) {
@@ -225,12 +226,22 @@
         return;
       }
 
+      // Disable submit button during processing
+      submitButton.disabled = true;
+      submitButton.textContent = 'Generating...';
+
       // Hide error message
       errorMessage.classList.remove('show');
 
       // Redirect to API endpoint (relative path)
       const apiUrl = `/api?username=${encodeURIComponent(username)}&repo=${encodeURIComponent(repo)}&theme=${encodeURIComponent(theme)}`;
       window.open(apiUrl, '_blank');
+
+      // Re-enable button after a short delay
+      setTimeout(function() {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Generate';
+      }, 1000);
     });
 
     // Hide error message when user starts typing
