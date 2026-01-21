@@ -236,7 +236,7 @@
 
       // Redirect to API endpoint (relative path)
       const apiUrl = `/api?username=${encodeURIComponent(username)}&repo=${encodeURIComponent(repo)}&theme=${encodeURIComponent(theme)}`;
-      window.location.href = apiUrl;
+      window.open(apiUrl, '_blank');
     });
 
     // Hide error message when user starts typing
