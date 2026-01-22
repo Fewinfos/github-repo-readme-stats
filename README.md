@@ -9,10 +9,6 @@ An open-source, fully client-side tool that visualizes **real-time GitHub reposi
 
 ---
 
-## 🎯 Objective   
-
-This widget uses the GitHub REST API to fetch and display various metadata and insights about any public GitHub repository. It works **entirely in the browser** with no backend or authentication required.
-
 ---
 
 ## ✨ Features
