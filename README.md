@@ -367,48 +367,6 @@ Return beautiful card
 
 </div>
 
----
-
-<div align="center">
-
-## 🤝 Contributing
-
-**We love contributions!** 💖
-
-**Join our amazing community of contributors**
-
-</div>
-
-<div align="center">
-
-<table>
-<tr>
-<td>
-
-### How to Contribute
-
-1. 🍴 **Fork** the repository
-2. 🌱 **Create** a feature branch (`git checkout -b feature/AmazingFeature`)
-3. ✨ **Commit** your changes (`git commit -m 'Add some AmazingFeature'`)
-4. 🚀 **Push** to the branch (`git push origin feature/AmazingFeature`)
-5. 📩 **Open** a Pull Request
-
-### Ways to Contribute
-
-- 🐛 Report bugs and issues
-- 💡 Suggest new features or enhancements  
-- 📝 Improve documentation
-- 🎨 Add new themes
-- 🌍 Translate to other languages
-- ⭐ Star the repository
-
-**Please read our [Contributing Guide](CONTRIBUTING.md) for detailed guidelines.**
-
-</td>
-</tr>
-</table>
-
-</div>
 
 ---
 
