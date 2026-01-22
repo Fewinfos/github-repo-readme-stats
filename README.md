@@ -240,6 +240,8 @@ readme-activity-calender/
 │   └── index.js           # Theme configurations
 ├── public/
 │   └── index.html         # Interactive card generator UI
+├── src/
+│   └── index.js           # Source files
 ├── docs/                  # Multi-language documentation
 ├── vercel.json            # Vercel deployment config
 ├── README.md              # This documentation
