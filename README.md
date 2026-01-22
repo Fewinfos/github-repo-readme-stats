@@ -225,12 +225,6 @@ This widget uses GitHub's powerful GraphQL API to fetch and display comprehensiv
 
 </div>
 
-<div align="center">
-
-<table>
-<tr>
-<td>
-
 ```
 readme-activity-calender/
 ├── api/
@@ -240,20 +234,12 @@ readme-activity-calender/
 │   └── index.js           # Theme configurations
 ├── public/
 │   └── index.html         # Interactive card generator UI
-├── src/
-│   └── index.js           # Source files
 ├── docs/                  # Multi-language documentation
 ├── vercel.json            # Vercel deployment config
 ├── README.md              # This documentation
 ├── USAGE.md               # Detailed usage guide
 └── LICENSE                # License information
 ```
-
-</td>
-</tr>
-</table>
-
-</div>
 
 <div align="center">
 
@@ -341,111 +327,6 @@ Return beautiful card
 
 <div align="center">
 
-## 🚀 Setup & Deployment
-
-**Get your repository stats widget up and running in minutes**
-
-</div>
-
----
-
-<div align="center">
-
-### 🔑 Prerequisites
-
-**Before deploying, you'll need a GitHub Personal Access Token**
-
-</div>
-
-<div align="center">
-
-<table>
-<tr>
-<td>
-
-**Step 1:** Visit [GitHub Settings](https://github.com/settings/tokens)
-
-**Step 2:** Navigate to **Developer settings → Personal access tokens → Tokens (classic)**
-
-**Step 3:** Click **Generate new token (classic)**
-
-**Step 4:** Select scopes: `repo` (Full control of private repositories)
-
-**Step 5:** Generate and **copy the token** (you won't see it again!)
-
-</td>
-</tr>
-</table>
-
-</div>
-
----
-
-<div align="center">
-
-### 🚀 Deploy to Vercel (Recommended)
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/fewinfos/github-repo-readme-stats)
-
-</div>
-
-<div align="center">
-
-<table>
-<tr>
-<td>
-
-**Quick Deploy Steps:**
-
-```bash
-# 1. Click "Deploy with Vercel" button above
-# 2. Sign in with GitHub
-# 3. Add environment variable:
-#    Name: GITHUB_TOKEN
-#    Value: <your_github_token>
-# 4. Click Deploy!
-```
-
-✅ Your API will be live at: `https://your-project-name.vercel.app/api`
-
-</td>
-</tr>
-</table>
-
-</div>
-
----
-
-<div align="center">
-
-### ⚙️ Environment Variables
-
-**Required configuration for deployment**
-
-</div>
-
-<div align="center">
-
-<table>
-<tr>
-<td>
-
-| Variable | Type | Description |
-|:---------|:----:|:------------|
-| `GITHUB_TOKEN` | **Required** | GitHub Personal Access Token with `repo` scope for API authentication |
-
-> **⚠️ Important:** Never commit your `.env` file or expose your token publicly!
-
-</td>
-</tr>
-</table>
-
-</div>
-
----
-
-<div align="center">
-
 ## 📚 Documentation & Resources
 
 **Everything you need to get started and contribute**
@@ -522,80 +403,6 @@ Return beautiful card
 - ⭐ Star the repository
 
 **Please read our [Contributing Guide](CONTRIBUTING.md) for detailed guidelines.**
-
-</td>
-</tr>
-</table>
-
-</div>
-
----
-
-<div align="center">
-
-## 📜 License
-
-**Open Source • Free Forever**
-
-</div>
-
-<div align="center">
-
-<table>
-<tr>
-<td align="center">
-
-This project is licensed under the **MIT License**
-
-See [LICENSE](LICENSE) file for details
-
-```
-Permissions: ✓ Commercial use ✓ Modification ✓ Distribution ✓ Private use
-Limitations: ✗ Liability ✗ Warranty
-```
-
-</td>
-</tr>
-</table>
-
-</div>
-
----
-
-<div align="center">
-
-## 🙏 Acknowledgments
-
-**Powered by amazing technologies and supported by the community**
-
-</div>
-
-<div align="center">
-
-<table>
-<tr>
-<td align="center" width="33%">
-
-### 💙 GitHub
-**GraphQL & REST API**
-
-For providing comprehensive repository data access
-
-</td>
-<td align="center" width="33%">
-
-### ▲ Vercel  
-**Serverless Platform**
-
-For reliable and fast hosting infrastructure
-
-</td>
-<td align="center" width="33%">
-
-### 👥 Community
-**Contributors & Users**
-
-For continuous support and improvements
 
 </td>
 </tr>
