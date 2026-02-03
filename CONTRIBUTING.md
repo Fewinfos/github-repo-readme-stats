@@ -58,6 +58,3 @@ Feel free to use, modify, and distribute it with attribution.
 **GitHub:** https://github.com/Fewinfos/  
 **Email:** fewinfos@gmail.com
 
-
-
-> 🛠 Built with ❤️ for the open-source community.
