@@ -415,6 +415,21 @@ module.exports = async (req, res) => {
     // Get language color
     const languageColor = LANGUAGE_COLORS[data.language] || LANGUAGE_COLORS.default;
 
+    // Calculate repository rank
+    const rankData = calculateRepoRank({
+      stars: data.stargazers_count || 0,
+      forks: data.forks_count || 0,
+      watchers: data.watchers_count || 0,
+      commitActivity: commitActivity,
+      releaseCadence: releaseCadence,
+      pushedAt: data.pushed_at,
+      prMergeRate: prMergeRate,
+      issueCloseRate: issueCloseRate,
+      contributorDiversity: contributorDiversity,
+      discussionActivity: discussionActivity,
+      commitQualityScore: commitQualityScore
+    });
+
     // Extract comprehensive repository data
     const repoData = {
       name: data.name || 'Unknown',
@@ -482,7 +497,13 @@ module.exports = async (req, res) => {
       growthTrend: growthTrend,
       starsPerDay: starsPerDay,
       discussionActivity: discussionActivity,
-      totalReleases: releasesData.length
+      totalReleases: releasesData.length,
+      // Repository Rank
+      rankScore: rankData.score,
+      rankTier: rankData.tier,
+      rankColor: rankData.color,
+      rankBgColor: rankData.bgColor,
+      rankBorderColor: rankData.borderColor
     };
 
     // Generate and return SVG
@@ -639,73 +660,60 @@ function generateRepoSVG(data, theme) {
 
   yPos += 50;
 
-  // Primary Language Badge
-  if (data.language) {
-    svg += `
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <rect width="${data.language.length * 8 + 30}" height="24" fill="${data.languageColor}20" stroke="${data.languageColor}" stroke-width="1.5" rx="12"/>
-    <circle cx="12" cy="12" r="5" fill="${data.languageColor}"/>
-    <text x="24" y="16" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="${theme.text}">
-      ${escapeXml(data.language)}
-    </text>
-  </g>`;
-  }
-
   // Status Badges (Right side of header)
   svg += `
   <g transform="translate(${rightColumn}, ${yPos})">
-    <!-- Health Badge -->
-    <rect width="70" height="24" fill="${healthStyle.bg}" stroke="${healthStyle.border}" stroke-width="1.5" rx="12"/>
-    <text x="35" y="16" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="${healthStyle.text}" text-anchor="middle">
-      ${data.healthStatus === 'active' ? '● ACTIVE' : '○ STALE'}
-    </text>
-    
-    <!-- Activity Badge -->
-    <g transform="translate(80, 0)">
-      <rect width="100" height="24" fill="${activityStyle.bg}" stroke="${activityStyle.border}" stroke-width="1.5" rx="12"/>
-      <path d="${ICONS.pulse}" fill="${activityStyle.text}" transform="translate(8, 6) scale(0.75)"/>
-      <text x="65" y="16" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="${activityStyle.text}" text-anchor="middle">
-        ${data.commitActivity.toUpperCase()}
-      </text>
-    </g>
-    
     <!-- Updated Time -->
-    <g transform="translate(190, 0)">
+    <g transform="translate(0, 0)">
       <rect width="${12 * 8 + 30}" height="24" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="12"/>
       <path d="${ICONS.clock}" fill="${theme.iconColor}" transform="translate(8, 6) scale(0.75)"/>
       <text x="28" y="16" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="${theme.textSecondary}">
         ${escapeXml(data.pushedAt)}
       </text>
     </g>
+  </g>
+  
+  <!-- Large Circular Rank Indicator (Right Side, Centered) -->
+  <g transform="translate(${width - 200}, ${height / 2 - 90})">
+    <!-- Shadow/Background -->
+    <circle cx="90" cy="90" r="85" fill="${data.rankBgColor}" stroke="${theme.border}" stroke-width="2" filter="url(#shadow)"/>
+    
+    <!-- Progress track (background) -->
+    <circle 
+      cx="90" 
+      cy="90" 
+      r="72" 
+      fill="none" 
+      stroke="${data.rankBorderColor}40" 
+      stroke-width="12"
+      stroke-linecap="round"/>
+    
+    <!-- Progress circle (animated) -->
+    <circle 
+      cx="90" 
+      cy="90" 
+      r="72" 
+      fill="none" 
+      stroke="${data.rankColor}" 
+      stroke-width="12"
+      stroke-linecap="round"
+      stroke-dasharray="${(data.rankScore / 100) * 452} 452"
+      transform="rotate(-90 90 90)"
+      style="transition: stroke-dasharray 0.5s ease;"/>
+    
+    <!-- Percentage text -->
+    <text x="90" y="85" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="48" font-weight="900" fill="${data.rankColor}" text-anchor="middle">
+      ${data.rankScore}
+    </text>
+    <text x="90" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="${theme.textMuted}" text-anchor="middle" letter-spacing="1">
+      RANK ${data.rankTier}
+    </text>
   </g>`;
 
   yPos += 40;
 
-  // Description
-  if (descLines.length > 0) {
-    svg += `
-  <g transform="translate(${leftColumn}, ${yPos})">`;
-    descLines.forEach((line, i) => {
-      svg += `
-    <text y="${i * 20}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" fill="${theme.textSecondary}" opacity="0.95">
-      ${escapeXml(line)}
-    </text>`;
-    });
-    svg += `
-  </g>`;
-    yPos += descHeight + 20;
-  }
-
   // Advanced Analytics Section
-  svg += `
-  <!-- ADVANCED ANALYTICS -->
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <text y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="${theme.textMuted}" letter-spacing="1">
-      ADVANCED INSIGHTS
-    </text>
-  </g>`;
-
-  yPos += 30;
+  yPos += 10;
 
   // Create metrics array for two-column list
   const metrics = [
@@ -935,4 +943,137 @@ function escapeXml(unsafe) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+/**
+ * Calculate repository rank based on multiple weighted metrics
+ * @param {Object} metrics - Repository metrics
+ * @returns {Object} - { score, tier, color }
+ */
+function calculateRepoRank(metrics) {
+  // Define weights for different categories (total = 100%)
+  const WEIGHTS = {
+    // Popularity Metrics (30%)
+    stars: 15,
+    forks: 8,
+    watchers: 7,
+    
+    // Activity Metrics (30%)
+    commitActivity: 12,
+    releaseCadence: 8,
+    recentUpdates: 10,
+    
+    // Community Health (40%)
+    prMergeRate: 10,
+    issueCloseRate: 10,
+    contributorDiversity: 8,
+    discussionActivity: 7,
+    codeQuality: 5
+  };
+
+  let totalScore = 0;
+
+  // 1. Stars Score (0-100 scale, logarithmic)
+  const starsScore = Math.min(100, Math.log10(Math.max(1, metrics.stars)) * 20);
+  totalScore += (starsScore * WEIGHTS.stars) / 100;
+
+  // 2. Forks Score (0-100 scale, logarithmic)
+  const forksScore = Math.min(100, Math.log10(Math.max(1, metrics.forks)) * 25);
+  totalScore += (forksScore * WEIGHTS.forks) / 100;
+
+  // 3. Watchers Score (0-100 scale, logarithmic)
+  const watchersScore = Math.min(100, Math.log10(Math.max(1, metrics.watchers)) * 25);
+  totalScore += (watchersScore * WEIGHTS.watchers) / 100;
+
+  // 4. Commit Activity Score
+  const activityScores = { high: 100, medium: 65, low: 30, unknown: 0 };
+  const activityScore = activityScores[metrics.commitActivity] || 0;
+  totalScore += (activityScore * WEIGHTS.commitActivity) / 100;
+
+  // 5. Release Cadence Score
+  let releaseScore = 0;
+  if (metrics.releaseCadence !== 'N/A') {
+    const cadence = metrics.releaseCadence.toLowerCase();
+    if (cadence.includes('d')) releaseScore = 100; // Daily/weekly releases
+    else if (cadence.includes('w')) releaseScore = 85; // Weekly releases
+    else if (cadence.includes('mo') && parseInt(cadence) <= 3) releaseScore = 70; // 1-3 month cadence
+    else releaseScore = 50; // Longer cadence
+  }
+  totalScore += (releaseScore * WEIGHTS.releaseCadence) / 100;
+
+  // 6. Recent Updates Score (based on days since last update)
+  const daysSinceUpdate = Math.floor((Date.now() - new Date(metrics.pushedAt)) / (1000 * 60 * 60 * 24));
+  let updateScore = 100;
+  if (daysSinceUpdate > 365) updateScore = 20;
+  else if (daysSinceUpdate > 180) updateScore = 40;
+  else if (daysSinceUpdate > 90) updateScore = 60;
+  else if (daysSinceUpdate > 30) updateScore = 80;
+  totalScore += (updateScore * WEIGHTS.recentUpdates) / 100;
+
+  // 7. PR Merge Rate Score (already 0-100)
+  totalScore += (metrics.prMergeRate * WEIGHTS.prMergeRate) / 100;
+
+  // 8. Issue Close Rate Score (already 0-100)
+  totalScore += (metrics.issueCloseRate * WEIGHTS.issueCloseRate) / 100;
+
+  // 9. Contributor Diversity Score
+  let diversityScore = 0;
+  if (metrics.contributorDiversity !== '0/0') {
+    const [active, total] = metrics.contributorDiversity.split('/').map(Number);
+    if (total > 0) {
+      const ratio = active / total;
+      diversityScore = Math.min(100, ratio * 200); // Higher ratio = better diversity
+      if (total >= 10) diversityScore = Math.min(100, diversityScore * 1.2); // Bonus for larger teams
+    }
+  }
+  totalScore += (diversityScore * WEIGHTS.contributorDiversity) / 100;
+
+  // 10. Discussion Activity Score
+  const discussionValue = parseFloat(metrics.discussionActivity) || 0;
+  let discussionScore = Math.min(100, discussionValue * 20); // Scale: 5+ comments = 100
+  totalScore += (discussionScore * WEIGHTS.discussionActivity) / 100;
+
+  // 11. Code Quality Score (commit message quality)
+  const qualityScore = metrics.commitQualityScore || 0;
+  totalScore += (qualityScore * WEIGHTS.codeQuality) / 100;
+
+  // Round to 1 decimal place
+  totalScore = Math.round(totalScore * 10) / 10;
+
+  // Determine tier based on score
+  let tier, color, bgColor, borderColor;
+  if (totalScore >= 90) {
+    tier = 'S';
+    color = '#FFD700'; // Gold
+    bgColor = '#FFF8DC';
+    borderColor = '#DAA520';
+  } else if (totalScore >= 75) {
+    tier = 'A';
+    color = '#2DA44E'; // Green
+    bgColor = '#DDF4E4';
+    borderColor = '#2DA44E';
+  } else if (totalScore >= 60) {
+    tier = 'B';
+    color = '#0969DA'; // Blue
+    bgColor = '#DDF4FF';
+    borderColor = '#0969DA';
+  } else if (totalScore >= 45) {
+    tier = 'C';
+    color = '#FB8500'; // Orange
+    bgColor = '#FFF5E6';
+    borderColor = '#FB8500';
+  } else {
+    tier = 'D';
+    color = '#CF222E'; // Red
+    bgColor = '#FFEBE9';
+    borderColor = '#F85149';
+  }
+
+  return {
+    score: totalScore,
+    tier: tier,
+    color: color,
+    bgColor: bgColor,
+    borderColor: borderColor
+  };
 }
