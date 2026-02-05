@@ -4,7 +4,7 @@ Thank you for taking the time to help improve the security of this project. We s
 
 ## 🛡️ Reporting Vulnerabilities
 
-If you discover a security issue in **GitHub Repo Stats Widget**, please follow these guidelines:
+If you discover a security issue in **GitHub Repo Readme Stats Widget**, please follow these guidelines:
 
 - 📧 Contact: fewinfos[at]gmail[dot]com
 - 📦 Include detailed information such as:

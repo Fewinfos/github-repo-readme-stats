@@ -5,7 +5,7 @@ We welcome community contributions!
 1. **Fork** this repository
 2. **Clone** it locally
    ```bash
-   git clone https://github.com/your-username/readme-activity-calender.git
+   git clone https://github.com/fewinfos/github-repo-readme-stats.git
    ```
 3. **Create a feature branch**
    ```bash
@@ -33,18 +33,6 @@ We welcome community contributions!
    cd your-project-folder
    vercel dev
 ```
-
-
-## 🧠 Future Ideas
-
-- 📊 Add commit activity graph (last 30 days)
-- 🌐 Internationalization support
-- 🔗 Compare multiple repositories
-- 📈 Trend analysis for stars/forks over time
-- 🧩 Drag-and-drop dashboard customization
-- 🪄 Live widget customizer with embed generator
-
-
 
 ## 📜 License
 

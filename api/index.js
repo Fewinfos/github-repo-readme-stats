@@ -669,37 +669,51 @@ function generateRepoSVG(data, theme) {
     </g>
   </g>
   
-  <!-- Large Circular Rank Indicator (Right Side, Upper Position) -->
-  <g transform="translate(${width - 300}, 110)">
-    <!-- Progress track (background) -->
-    <circle 
-      cx="110" 
-      cy="110" 
-      r="95" 
-      fill="none" 
-      stroke="${theme.iconColor}20" 
-      stroke-width="14"
-      stroke-linecap="round"/>
+  <!-- Rectangular Rank Indicator (Right Side, Upper Position) -->
+  <g transform="translate(${width - 300}, 150)">
+    <!-- Background rectangle -->
+    <rect 
+      x="0" 
+      y="0" 
+      width="240" 
+      height="140" 
+      fill="${theme.badgeBg}" 
+      stroke="${theme.border}" 
+      stroke-width="2" 
+      rx="16"/>
     
-    <!-- Progress circle (animated) -->
-    <circle 
-      cx="110" 
-      cy="110" 
-      r="95" 
-      fill="none" 
-      stroke="${theme.title}" 
-      stroke-width="14"
-      stroke-linecap="round"
-      stroke-dasharray="${(data.rankScore / 100) * 597} 597"
-      transform="rotate(-90 110 110)"
-      style="transition: stroke-dasharray 0.5s ease;"/>
+    <!-- Progress bar background -->
+    <rect 
+      x="20" 
+      y="90" 
+      width="200" 
+      height="12" 
+      fill="${theme.iconColor}20" 
+      rx="6"/>
     
-    <!-- Percentage text -->
-    <text x="110" y="105" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="42" font-weight="900" fill="${theme.title}" text-anchor="middle">
+    <!-- Progress bar fill -->
+    <rect 
+      x="20" 
+      y="90" 
+      width="${(data.rankScore / 100) * 200}" 
+      height="12" 
+      fill="${theme.title}" 
+      rx="6"
+      style="transition: width 0.5s ease;"/>
+    
+    <!-- Rank score -->
+    <text x="120" y="50" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="48" font-weight="900" fill="${theme.title}" text-anchor="middle">
       ${data.rankScore}
     </text>
-    <text x="110" y="135" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="${theme.textMuted}" text-anchor="middle" letter-spacing="2">
-      ${data.rankTier}
+    
+    <!-- Rank tier -->
+    <text x="120" y="75" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="${theme.textMuted}" text-anchor="middle" letter-spacing="2">
+      TIER ${data.rankTier}
+    </text>
+    
+    <!-- Percentage label -->
+    <text x="120" y="125" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}" text-anchor="middle">
+      RANK SCORE
     </text>
   </g>`;
 
