@@ -500,7 +500,11 @@ module.exports = async (req, res) => {
       totalReleases: releasesData.length,
       // Repository Rank
       rankScore: rankData.score,
-      rankTier: rankData.tier
+      rankTier: rankData.tier,
+      // Activity data for graph
+      recentCommits: recentCommits,
+      recentPRs: recentPRs,
+      recentIssues: recentIssues
     };
 
     // Generate and return SVG
@@ -594,8 +598,9 @@ function generateRepoSVG(data, theme) {
   const descSection = descLines.length > 0 ? descHeight + 20 : 0;
   const advancedMetricsSection = 180; // 8 metrics in 4 rows at 35px each + header (30px) + padding (20px)
   const topicsSection = data.topics.length > 0 ? 40 : 0;
+  const activityGraphSection = 180; // Activity graph height
   
-  const height = padding + headerHeight + descSection + advancedMetricsSection + topicsSection + 20;
+  const height = padding + headerHeight + descSection + advancedMetricsSection + topicsSection + activityGraphSection + 20;
 
   // Activity indicator colors
   const activityColors = {
@@ -785,6 +790,115 @@ function generateRepoSVG(data, theme) {
   </g>`;
     yPos += 40;
   }
+
+  // Activity Graph Section
+  yPos += 10;
+  
+  // Calculate 30-day activity data
+  const activityData = [];
+  const today = new Date();
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+    
+    // Count activities for this day
+    let count = 0;
+    
+    // Count commits
+    if (data.recentCommits) {
+      count += data.recentCommits.filter(c => {
+        if (!c.commit?.committedDate) return false;
+        const commitDate = new Date(c.commit.committedDate).toISOString().split('T')[0];
+        return commitDate === dateStr;
+      }).length;
+    }
+    
+    // Count PRs
+    if (data.recentPRs) {
+      count += data.recentPRs.filter(pr => {
+        if (!pr.created_at) return false;
+        const prDate = new Date(pr.created_at).toISOString().split('T')[0];
+        return prDate === dateStr;
+      }).length;
+    }
+    
+    // Count issues
+    if (data.recentIssues) {
+      count += data.recentIssues.filter(issue => {
+        if (!issue.created_at) return false;
+        const issueDate = new Date(issue.created_at).toISOString().split('T')[0];
+        return issueDate === dateStr;
+      }).length;
+    }
+    
+    activityData.push({ date: i === 0 ? 'Today' : i === 1 ? 'Yesterday' : `${i}d ago`, count });
+  }
+  
+  const maxActivity = Math.max(...activityData.map(d => d.count), 1);
+  const graphWidth = width - padding * 2 - 300; // Leave space for rank card
+  const graphHeight = 120;
+  const pointWidth = graphWidth / 29; // 30 points, 29 gaps
+  
+  // Create path data for line chart
+  const pathData = activityData.map((d, i) => {
+    const x = i * pointWidth;
+    const y = graphHeight - (d.count / maxActivity) * graphHeight;
+    return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`;
+  }).join(' ');
+  
+  // Create area fill path
+  const areaPath = `${pathData} L ${(activityData.length - 1) * pointWidth} ${graphHeight} L 0 ${graphHeight} Z`;
+  
+  svg += `
+  <!-- Activity Graph -->
+  <g transform="translate(${leftColumn}, ${yPos})">
+    <text y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="${theme.textMuted}" letter-spacing="1">
+      LAST 30 DAYS ACTIVITY
+    </text>
+    
+    <g transform="translate(0, 25)">
+      <!-- Y-axis label -->
+      <text x="-10" y="${graphHeight / 2}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="${theme.textMuted}" text-anchor="end" transform="rotate(-90, -10, ${graphHeight / 2})">
+        Activity Count
+      </text>
+      
+      <!-- Graph area -->
+      <g transform="translate(20, 0)">
+        <!-- Grid lines -->
+        ${[0, 0.25, 0.5, 0.75, 1].map(ratio => `
+        <line x1="0" y1="${graphHeight * (1 - ratio)}" x2="${graphWidth}" y2="${graphHeight * (1 - ratio)}" stroke="${theme.border}" stroke-width="1" opacity="0.3"/>
+        <text x="-5" y="${graphHeight * (1 - ratio) + 4}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9" fill="${theme.textMuted}" text-anchor="end">
+          ${Math.round(maxActivity * ratio)}
+        </text>`).join('')}
+        
+        <!-- Area fill -->
+        <path d="${areaPath}" fill="${theme.title}" opacity="0.1"/>
+        
+        <!-- Line chart -->
+        <path d="${pathData}" fill="none" stroke="${theme.title}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        
+        <!-- Data points -->
+        ${activityData.map((d, i) => {
+          const x = i * pointWidth;
+          const y = graphHeight - (d.count / maxActivity) * graphHeight;
+          return `
+        <circle cx="${x}" cy="${y}" r="3" fill="${theme.title}" stroke="${theme.bg}" stroke-width="1.5">
+          <title>${d.date}: ${d.count} activities</title>
+        </circle>`;
+        }).join('')}
+        
+        <!-- X-axis -->
+        <line x1="0" y1="${graphHeight}" x2="${graphWidth}" y2="${graphHeight}" stroke="${theme.border}" stroke-width="2"/>
+        
+        <!-- X-axis labels (show only some dates) -->
+        ${[0, 7, 14, 21, 29].map(i => `
+        <text x="${i * pointWidth}" y="${graphHeight + 15}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9" fill="${theme.textMuted}" text-anchor="middle">
+          ${activityData[i].date}
+        </text>`).join('')}
+      </g>
+    </g>
+  </g>`;
   
   svg += `
 </svg>`;
