@@ -9,6 +9,45 @@ An open-source, fully client-side tool that visualizes **real-time GitHub reposi
 
 ---
 
+## ⭐ Repository Ranking System
+
+The widget now includes an **intelligent ranking system** that evaluates repositories based on multiple weighted metrics and assigns a letter grade (S, A, B, C, D) with a numerical score.
+
+### How Ranking Works
+
+The ranking algorithm analyzes your repository across three main categories:
+
+#### 📊 **Popularity Metrics (30%)**
+- **Stars** (15%): Logarithmic scale - measures community interest
+- **Forks** (8%): Indicates code reusability and adoption
+- **Watchers** (7%): Shows active monitoring and engagement
+
+#### 🔥 **Activity Metrics (30%)**
+- **Commit Activity** (12%): Recent development momentum (high/medium/low)
+- **Release Cadence** (8%): Frequency and regularity of releases
+- **Recent Updates** (10%): How recently the repository was updated
+
+#### 💚 **Community Health (40%)**
+- **PR Merge Rate** (10%): Percentage of pull requests successfully merged
+- **Issue Close Rate** (10%): Efficiency in resolving issues
+- **Contributor Diversity** (8%): Active vs total contributors ratio
+- **Discussion Activity** (7%): Average comments per issue/PR
+- **Code Quality** (5%): Commit message quality score
+
+### Ranking Tiers
+
+| Tier | Score Range | Badge Color | Description |
+|------|-------------|-------------|-------------|
+| **S** | 90-100 | 🟡 Gold | Exceptional - Top-tier project with outstanding metrics |
+| **A** | 75-89 | 🟢 Green | Excellent - Highly active and well-maintained |
+| **B** | 60-74 | 🔵 Blue | Good - Solid project with healthy metrics |
+| **C** | 45-59 | 🟠 Orange | Fair - Room for improvement in some areas |
+| **D** | 0-44 | 🔴 Red | Needs Attention - Multiple areas need improvement |
+
+The ranking badge appears automatically in the widget header, showing both the tier letter and numerical score.
+
+---
+
 ## Themes
 
 Customize your widget with **10 beautiful built-in themes**! Each theme provides carefully selected colors for optimal readability and aesthetics.
