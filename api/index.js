@@ -593,10 +593,9 @@ function generateRepoSVG(data, theme) {
   const headerHeight = 100;
   const descSection = descLines.length > 0 ? descHeight + 20 : 0;
   const advancedMetricsSection = 180; // 8 metrics in 4 rows at 35px each + header (30px) + padding (20px)
-  const topicsSection = data.topics.length > 0 ? 50 : 0;
-  const footerSection = 60;
+  const topicsSection = data.topics.length > 0 ? 40 : 0;
   
-  const height = padding + headerHeight + descSection + advancedMetricsSection + topicsSection + footerSection + padding;
+  const height = padding + headerHeight + descSection + advancedMetricsSection + topicsSection + 20;
 
   // Activity indicator colors
   const activityColors = {
@@ -786,46 +785,7 @@ function generateRepoSVG(data, theme) {
   </g>`;
     yPos += 40;
   }
-
-  // Footer Section with Additional Info
-  svg += `
-  <!-- FOOTER INFO -->
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <rect width="${width - padding * 2}" height="1" fill="${theme.border}"/>
-  </g>`;
   
-  yPos += 15;
-  
-  svg += `
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <!-- License -->
-    <g>
-      <path d="${ICONS.license}" fill="${theme.iconColor}" transform="scale(0.85)"/>
-      <text x="20" y="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="${theme.textSecondary}">
-        ${data.license ? escapeXml(data.license) : 'No license'}
-      </text>
-    </g>
-    
-    <!-- Features -->
-    <g transform="translate(280, 0)">
-      <text x="0" y="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="${theme.textMuted}">
-        ${data.hasIssues ? '✓' : '✗'} Issues  ${data.hasWiki ? '✓' : '✗'} Wiki  ${data.hasPages ? '✓' : '✗'} Pages  ${data.hasDiscussions ? '✓' : '✗'} Discussions
-      </text>
-    </g>
-  </g>`;
-  
-  yPos += 20;
-  
-  // Latest Release Info
-  if (data.latestRelease) {
-    svg += `
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <text x="0" y="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="${theme.textMuted}">
-      Latest Release: <tspan font-weight="600" fill="${theme.text}">${escapeXml(data.latestRelease.tag)}</tspan> · ${escapeXml(data.latestRelease.publishedAt)}
-    </text>
-  </g>`;
-  }
-
   svg += `
 </svg>`;
 
