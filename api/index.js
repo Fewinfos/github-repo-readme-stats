@@ -593,11 +593,10 @@ function generateRepoSVG(data, theme) {
   const headerHeight = 100;
   const descSection = descLines.length > 0 ? descHeight + 20 : 0;
   const advancedMetricsSection = 180; // 8 metrics in 4 rows at 35px each + header (30px) + padding (20px)
-  const contributorsSection = data.topContributors.length > 0 ? 100 : 0;
   const topicsSection = data.topics.length > 0 ? 50 : 0;
   const footerSection = 60;
   
-  const height = padding + headerHeight + descSection + advancedMetricsSection + contributorsSection + topicsSection + footerSection + padding;
+  const height = padding + headerHeight + descSection + advancedMetricsSection + topicsSection + footerSection + padding;
 
   // Activity indicator colors
   const activityColors = {
@@ -657,21 +656,21 @@ function generateRepoSVG(data, theme) {
 
   yPos += 50;
 
-  // Status Badges (Right side of header)
+  // Status Badges (Top right corner)
   svg += `
-  <g transform="translate(${rightColumn}, ${yPos})">
+  <g transform="translate(${width - 130}, ${padding - 30})">
     <!-- Updated Time -->
     <g transform="translate(0, 0)">
-      <rect width="${12 * 8 + 30}" height="24" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="12"/>
+      <rect width="100" height="24" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="1" rx="12"/>
       <path d="${ICONS.clock}" fill="${theme.iconColor}" transform="translate(8, 6) scale(0.75)"/>
-      <text x="28" y="16" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="${theme.textSecondary}">
+      <text x="26" y="16" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="${theme.textSecondary}">
         ${escapeXml(data.pushedAt)}
       </text>
     </g>
   </g>
   
   <!-- Large Circular Rank Indicator (Right Side, Upper Position) -->
-  <g transform="translate(${width - 230}, 60)">
+  <g transform="translate(${width - 350}, 80)">
     <!-- Progress track (background) -->
     <circle 
       cx="110" 
@@ -728,7 +727,7 @@ function generateRepoSVG(data, theme) {
   metrics.forEach((metric, idx) => {
     const column = idx % 2;
     const row = Math.floor(idx / 2);
-    const xPos = column * 460;
+    const xPos = column * 330;
     const yOffset = row * 35;
     
     svg += `
@@ -747,43 +746,6 @@ function generateRepoSVG(data, theme) {
   </g>`;
 
   yPos += Math.ceil(metrics.length / 2) * 35 + 20;
-
-  // Contributors Section
-  if (data.topContributors.length > 0) {
-    svg += `
-  <!-- TOP CONTRIBUTORS -->
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <text y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="${theme.textMuted}" letter-spacing="1">
-      TOP CONTRIBUTORS
-    </text>
-  </g>`;
-    
-    yPos += 25;
-    
-    svg += `
-  <g transform="translate(${leftColumn}, ${yPos})">`;
-    data.topContributors.forEach((contributor, idx) => {
-      if (idx >= 6) return; // Limit to 6 contributors
-      const xPos = idx * 140;
-      svg += `
-    <g transform="translate(${xPos}, 0)">
-      <circle cx="20" cy="20" r="20" fill="${theme.badgeBg}" stroke="${theme.badgeBorder}" stroke-width="2"/>
-      <text x="20" y="26" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="${theme.title}" text-anchor="middle">
-        ${escapeXml(contributor.login.substring(0, 1).toUpperCase())}
-      </text>
-      <text x="20" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="${theme.textSecondary}" text-anchor="middle">
-        ${escapeXml(contributor.login.length > 12 ? contributor.login.substring(0, 10) + '..' : contributor.login)}
-      </text>
-      <text x="20" y="70" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10" fill="${theme.textMuted}" text-anchor="middle">
-        ${formatNumber(contributor.contributions)} commits
-      </text>
-    </g>`;
-    });
-    svg += `
-  </g>`;
-    
-    yPos += 85;
-  }
 
   // Topics Section
   if (data.topics.length > 0) {
