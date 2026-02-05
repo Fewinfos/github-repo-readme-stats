@@ -9,6 +9,7 @@ const THEMES = require('../themes/index.js');
 const { calculateRepoRank, generateRankSVG } = require('../src/rank');
 const { calculateAnalytics, generateAnalyticsSVG } = require('../src/analytics');
 const { calculateActivityData, generateActivityGraphSVG } = require('../src/graph');
+const { calculateStreakStats, generateStreakSVG } = require('../src/streak');
 
 // Language colors from GitHub
 const LANGUAGE_COLORS = {
@@ -652,8 +653,14 @@ function generateRepoSVG(data, theme) {
     recentIssues: data.recentIssues
   });
   
+  // Calculate streak statistics
+  const streakStats = calculateStreakStats(activityData);
+  
   const graphResult = generateActivityGraphSVG(activityData, theme, width, padding, leftColumn, yPos);
   svg += graphResult.svg;
+  
+  // Add streak stats box
+  svg += generateStreakSVG(streakStats, theme, width, yPos);
   
   svg += `
 </svg>`;
