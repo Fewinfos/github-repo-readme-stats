@@ -6,7 +6,7 @@
 # GitHub Repository Stats Widget
 
 An open-source, fully client-side tool that visualizes **real-time GitHub repository statistics** in an interactive and customizable format — perfect for developers, open-source maintainers, and portfolio builders.
-
+ 
 ---
 
 ## ⭐ Repository Ranking System
