@@ -670,7 +670,7 @@ function generateRepoSVG(data, theme) {
   </g>
   
   <!-- Large Circular Rank Indicator (Right Side, Upper Position) -->
-  <g transform="translate(${width - 350}, 80)">
+  <g transform="translate(${width - 300}, 110)">
     <!-- Progress track (background) -->
     <circle 
       cx="110" 
