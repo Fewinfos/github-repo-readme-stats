@@ -500,10 +500,7 @@ module.exports = async (req, res) => {
       totalReleases: releasesData.length,
       // Repository Rank
       rankScore: rankData.score,
-      rankTier: rankData.tier,
-      rankColor: rankData.color,
-      rankBgColor: rankData.bgColor,
-      rankBorderColor: rankData.borderColor
+      rankTier: rankData.tier
     };
 
     // Generate and return SVG
@@ -673,40 +670,37 @@ function generateRepoSVG(data, theme) {
     </g>
   </g>
   
-  <!-- Large Circular Rank Indicator (Right Side, Centered) -->
-  <g transform="translate(${width - 200}, ${height / 2 - 90})">
-    <!-- Shadow/Background -->
-    <circle cx="90" cy="90" r="85" fill="${data.rankBgColor}" stroke="${theme.border}" stroke-width="2" filter="url(#shadow)"/>
-    
+  <!-- Large Circular Rank Indicator (Right Side, Upper Position) -->
+  <g transform="translate(${width - 230}, 60)">
     <!-- Progress track (background) -->
     <circle 
-      cx="90" 
-      cy="90" 
-      r="72" 
+      cx="110" 
+      cy="110" 
+      r="95" 
       fill="none" 
-      stroke="${data.rankBorderColor}40" 
-      stroke-width="12"
+      stroke="${theme.iconColor}20" 
+      stroke-width="14"
       stroke-linecap="round"/>
     
     <!-- Progress circle (animated) -->
     <circle 
-      cx="90" 
-      cy="90" 
-      r="72" 
+      cx="110" 
+      cy="110" 
+      r="95" 
       fill="none" 
-      stroke="${data.rankColor}" 
-      stroke-width="12"
+      stroke="${theme.title}" 
+      stroke-width="14"
       stroke-linecap="round"
-      stroke-dasharray="${(data.rankScore / 100) * 452} 452"
-      transform="rotate(-90 90 90)"
+      stroke-dasharray="${(data.rankScore / 100) * 597} 597"
+      transform="rotate(-90 110 110)"
       style="transition: stroke-dasharray 0.5s ease;"/>
     
     <!-- Percentage text -->
-    <text x="90" y="85" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="48" font-weight="900" fill="${data.rankColor}" text-anchor="middle">
+    <text x="110" y="105" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="42" font-weight="900" fill="${theme.title}" text-anchor="middle">
       ${data.rankScore}
     </text>
-    <text x="90" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="${theme.textMuted}" text-anchor="middle" letter-spacing="1">
-      RANK ${data.rankTier}
+    <text x="110" y="135" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="${theme.textMuted}" text-anchor="middle" letter-spacing="2">
+      ${data.rankTier}
     </text>
   </g>`;
 
@@ -833,14 +827,6 @@ function generateRepoSVG(data, theme) {
       <path d="${ICONS.license}" fill="${theme.iconColor}" transform="scale(0.85)"/>
       <text x="20" y="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="${theme.textSecondary}">
         ${data.license ? escapeXml(data.license) : 'No license'}
-      </text>
-    </g>
-    
-    <!-- Branch -->
-    <g transform="translate(150, 0)">
-      <path d="${ICONS.branch}" fill="${theme.iconColor}" transform="scale(0.85)"/>
-      <text x="20" y="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="${theme.textSecondary}">
-        ${escapeXml(data.defaultBranch)}
       </text>
     </g>
     
@@ -1041,39 +1027,21 @@ function calculateRepoRank(metrics) {
   totalScore = Math.round(totalScore * 10) / 10;
 
   // Determine tier based on score
-  let tier, color, bgColor, borderColor;
+  let tier;
   if (totalScore >= 90) {
     tier = 'S';
-    color = '#FFD700'; // Gold
-    bgColor = '#FFF8DC';
-    borderColor = '#DAA520';
   } else if (totalScore >= 75) {
     tier = 'A';
-    color = '#2DA44E'; // Green
-    bgColor = '#DDF4E4';
-    borderColor = '#2DA44E';
   } else if (totalScore >= 60) {
     tier = 'B';
-    color = '#0969DA'; // Blue
-    bgColor = '#DDF4FF';
-    borderColor = '#0969DA';
   } else if (totalScore >= 45) {
     tier = 'C';
-    color = '#FB8500'; // Orange
-    bgColor = '#FFF5E6';
-    borderColor = '#FB8500';
   } else {
     tier = 'D';
-    color = '#CF222E'; // Red
-    bgColor = '#FFEBE9';
-    borderColor = '#F85149';
   }
 
   return {
     score: totalScore,
-    tier: tier,
-    color: color,
-    bgColor: bgColor,
-    borderColor: borderColor
+    tier: tier
   };
 }
