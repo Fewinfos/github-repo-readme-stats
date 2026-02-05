@@ -5,6 +5,12 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 // Import themes from themes folder
 const THEMES = require('../themes/index.js');
 
+// Import modules
+const { calculateRepoRank, generateRankSVG } = require('../src/rank');
+const { calculateAnalytics, generateAnalyticsSVG } = require('../src/analytics');
+const { calculateActivityData, generateActivityGraphSVG } = require('../src/graph');
+const { calculateStreakStats, generateStreakSVG } = require('../src/streak');
+
 // Language colors from GitHub
 const LANGUAGE_COLORS = {
   JavaScript: '#f1e05a',
@@ -277,110 +283,37 @@ module.exports = async (req, res) => {
     const mergedPRsCount = gqlRepo.mergedPullRequests.totalCount;
     const closedIssuesCount = gqlRepo.closedIssues.totalCount;
 
-    // Calculate commit activity based on recent commits
-    let commitActivity = 'unknown';
-    if (recentCommits.length > 0) {
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const recentCommitCount = recentCommits.filter(c => 
-        c.commit?.committedDate ? new Date(c.commit.committedDate) > thirtyDaysAgo : false
-      ).length;
-      if (recentCommitCount === 0) commitActivity = 'low';
-      else if (recentCommitCount < 10) commitActivity = 'low';
-      else if (recentCommitCount < 30) commitActivity = 'medium';
-      else commitActivity = 'high';
-    }
-
-    // Calculate PR Merge Rate
-    const prMergeRate = totalPullRequests > 0 ? Math.min(100, Math.floor((mergedPRsCount / totalPullRequests) * 100)) : 0;
-
-    // Calculate Issue Close Rate
-    const issueCloseRate = totalIssues > 0 ? Math.min(100, Math.floor((closedIssuesCount / totalIssues) * 100)) : 0;
-
-    // Calculate Average Time to Merge (for recent PRs)
-    let avgTimeToMerge = 'N/A';
-    const mergedRecentPRs = recentPRs.filter(pr => pr.merged_at);
-    if (mergedRecentPRs.length > 0) {
-      const totalMergeTime = mergedRecentPRs.reduce((sum, pr) => {
-        const created = new Date(pr.created_at);
-        const merged = new Date(pr.merged_at);
-        return sum + (merged - created);
-      }, 0);
-      const avgMs = totalMergeTime / mergedRecentPRs.length;
-      const avgDays = Math.floor(avgMs / (1000 * 60 * 60 * 24));
-      const avgHours = Math.floor((avgMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      avgTimeToMerge = avgDays > 0 ? `${avgDays}d` : `${avgHours}h`;
-    }
-
-    // Calculate Average Response Time (first comment/review on issues/PRs)
-    let avgResponseTime = 'N/A';
-    const itemsWithComments = [...recentIssues, ...recentPRs].filter(item => item.comments > 0).slice(0, 20);
-    if (itemsWithComments.length > 5) {
-      // Simplified: estimate based on creation time patterns
-      avgResponseTime = '< 24h'; // This is a simplified metric; full implementation would need comments API
-    }
-
-    // Calculate Stale Issues (open > 90 days)
-    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-    const staleIssuesCount = recentIssues.filter(issue => 
-      issue.state === 'open' && !issue.pull_request && new Date(issue.created_at) < ninetyDaysAgo
-    ).length;
-
-    // Contributor Diversity (new vs returning in recent commits)
-    const contributorSet = new Set();
-    const recentContributorSet = new Set();
-    recentCommits.slice(0, 50).forEach(commit => {
-      if (commit.author?.login) {
-        recentContributorSet.add(commit.author.login);
-      }
+    // Calculate analytics using the analytics module
+    const analyticsMetrics = calculateAnalytics({
+      recentCommits,
+      recentPRs,
+      recentIssues,
+      totalPullRequests,
+      totalIssues,
+      mergedPRsCount,
+      closedIssuesCount,
+      contributorsData,
+      releasesData,
+      createdAt: data.created_at,
+      stars: data.stargazers_count || 0
     });
-    contributorsData.forEach(c => contributorSet.add(c.login));
-    const contributorDiversity = contributorSet.size > 0 ? `${recentContributorSet.size}/${contributorSet.size}` : '0/0';
 
-    // Bus Factor (concentration risk - top contributor %)
-    let busFactor = 'Low Risk';
-    if (contributorsData.length > 0) {
-      const totalContributions = contributorsData.reduce((sum, c) => sum + c.contributions, 0);
-      const topContributorPercent = (contributorsData[0].contributions / totalContributions) * 100;
-      if (topContributorPercent > 70) busFactor = 'High Risk';
-      else if (topContributorPercent > 50) busFactor = 'Medium Risk';
-      else busFactor = 'Low Risk';
-    }
-
-    // Release Cadence
-    let releaseCadence = 'N/A';
-    if (releasesData.length >= 2) {
-      const recentReleases = releasesData.slice(0, 5);
-      let totalDaysBetween = 0;
-      for (let i = 0; i < recentReleases.length - 1; i++) {
-        const date1 = new Date(recentReleases[i].published_at);
-        const date2 = new Date(recentReleases[i + 1].published_at);
-        totalDaysBetween += Math.abs(date1 - date2) / (1000 * 60 * 60 * 24);
-      }
-      const avgDays = Math.floor(totalDaysBetween / (recentReleases.length - 1));
-      if (avgDays < 30) releaseCadence = `~${avgDays}d`;
-      else if (avgDays < 90) releaseCadence = `~${Math.floor(avgDays / 7)}w`;
-      else releaseCadence = `~${Math.floor(avgDays / 30)}mo`;
-    }
-
-    // Commit Message Quality Score (simplified)
-    let commitQualityScore = 0;
-    if (recentCommits.length > 0) {
-      const qualityCommits = recentCommits.filter(commit => {
-        const msg = commit.commit?.message || '';
-        return msg.length >= 20 && msg.length <= 200 && !msg.match(/^(fix|update|change|wip)$/i);
-      }).length;
-      commitQualityScore = Math.floor((qualityCommits / recentCommits.length) * 100);
-    }
-
-    // Growth Trend (stars growth estimate based on age)
-    const repoAgeInDays = Math.floor((Date.now() - new Date(data.created_at)) / (1000 * 60 * 60 * 24));
-    const starsPerDay = repoAgeInDays > 0 ? (data.stargazers_count / repoAgeInDays).toFixed(2) : 0;
-    const growthTrend = parseFloat(starsPerDay) > 1 ? 'High Growth' : parseFloat(starsPerDay) > 0.1 ? 'Growing' : 'Stable';
-
-    // Discussion Activity (comments per issue/PR)
-    const totalItems = recentIssues.length + recentPRs.length;
-    const totalComments = [...recentIssues, ...recentPRs].reduce((sum, item) => sum + (item.comments || 0), 0);
-    const discussionActivity = totalItems > 0 ? (totalComments / totalItems).toFixed(1) : '0.0';
+    const {
+      commitActivity,
+      prMergeRate,
+      issueCloseRate,
+      avgTimeToMerge,
+      avgResponseTime,
+      staleIssuesCount,
+      contributorDiversity,
+      busFactor,
+      releaseCadence,
+      commitQualityScore,
+      growthTrend,
+      starsPerDay,
+      discussionActivity,
+      activeContributors
+    } = analyticsMetrics;
 
     // Process languages data
     const languagesArray = Object.entries(languagesData).map(([name, bytes]) => ({
@@ -488,7 +421,7 @@ module.exports = async (req, res) => {
       // Contributor Insights
       contributorDiversity: contributorDiversity,
       busFactor: busFactor,
-      activeContributors: recentContributorSet.size,
+      activeContributors: activeContributors,
       // Code Quality
       commitQualityScore: commitQualityScore,
       releaseCadence: releaseCadence,
@@ -500,7 +433,11 @@ module.exports = async (req, res) => {
       totalReleases: releasesData.length,
       // Repository Rank
       rankScore: rankData.score,
-      rankTier: rankData.tier
+      rankTier: rankData.tier,
+      // Activity data for graph
+      recentCommits: recentCommits,
+      recentPRs: recentPRs,
+      recentIssues: recentIssues
     };
 
     // Generate and return SVG
@@ -593,10 +530,10 @@ function generateRepoSVG(data, theme) {
   const headerHeight = 100;
   const descSection = descLines.length > 0 ? descHeight + 20 : 0;
   const advancedMetricsSection = 180; // 8 metrics in 4 rows at 35px each + header (30px) + padding (20px)
-  const topicsSection = data.topics.length > 0 ? 50 : 0;
-  const footerSection = 60;
+  const topicsSection = data.topics.length > 0 ? 40 : 0;
+  const activityGraphSection = 180; // Activity graph height
   
-  const height = padding + headerHeight + descSection + advancedMetricsSection + topicsSection + footerSection + padding;
+  const height = padding + headerHeight + descSection + advancedMetricsSection + topicsSection + activityGraphSection + 20;
 
   // Activity indicator colors
   const activityColors = {
@@ -669,83 +606,16 @@ function generateRepoSVG(data, theme) {
     </g>
   </g>
   
-  <!-- Large Circular Rank Indicator (Right Side, Upper Position) -->
-  <g transform="translate(${width - 300}, 110)">
-    <!-- Progress track (background) -->
-    <circle 
-      cx="110" 
-      cy="110" 
-      r="95" 
-      fill="none" 
-      stroke="${theme.iconColor}20" 
-      stroke-width="14"
-      stroke-linecap="round"/>
-    
-    <!-- Progress circle (animated) -->
-    <circle 
-      cx="110" 
-      cy="110" 
-      r="95" 
-      fill="none" 
-      stroke="${theme.title}" 
-      stroke-width="14"
-      stroke-linecap="round"
-      stroke-dasharray="${(data.rankScore / 100) * 597} 597"
-      transform="rotate(-90 110 110)"
-      style="transition: stroke-dasharray 0.5s ease;"/>
-    
-    <!-- Percentage text -->
-    <text x="110" y="105" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="42" font-weight="900" fill="${theme.title}" text-anchor="middle">
-      ${data.rankScore}
-    </text>
-    <text x="110" y="135" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="${theme.textMuted}" text-anchor="middle" letter-spacing="2">
-      ${data.rankTier}
-    </text>
-  </g>`;
+  ${generateRankSVG(data, theme, width)}`;
 
   yPos += 40;
 
   // Advanced Analytics Section
   yPos += 10;
 
-  // Create metrics array for two-column list
-  const metrics = [
-    { icon: ICONS.graph, label: 'PR MERGE RATE', value: `${data.prMergeRate}%` },
-    { icon: ICONS.check, label: 'ISSUE CLOSE RATE', value: `${data.issueCloseRate}%` },
-    { icon: ICONS.clock, label: 'AVG TIME TO MERGE', value: data.avgTimeToMerge },
-    { icon: 'M1.75 1A1.75 1.75 0 000 2.75v8.5C0 12.216.784 13 1.75 13H3v1.543a1.457 1.457 0 002.487 1.03L8.61 12.5h5.64c.966 0 1.75-.784 1.75-1.75v-8.5A1.75 1.75 0 0014.25 1H1.75zM1.5 2.75a.25.25 0 01.25-.25h12.5a.25.25 0 01.25.25v8.5a.25.25 0 01-.25.25h-6.5a.75.75 0 00-.53.22L4.5 14.44v-2.19a.75.75 0 00-.75-.75h-2a.25.25 0 01-.25-.25v-8.5z', label: 'DISCUSSION/ITEM', value: data.discussionActivity },
-    { icon: ICONS.shield, label: 'BUS FACTOR', value: data.busFactor },
-    { icon: ICONS.zap, label: 'GROWTH TREND', value: data.growthTrend },
-    { icon: ICONS.tag, label: 'RELEASE CADENCE', value: data.releaseCadence },
-    { icon: 'M1.5 2.75a.25.25 0 01.25-.25h8.5a.25.25 0 01.25.25v8.5a.25.25 0 01-.25.25h-8.5a.25.25 0 01-.25-.25v-8.5zM1.75 1A1.75 1.75 0 000 2.75v8.5C0 12.216.784 13 1.75 13h8.5c.966 0 1.75-.784 1.75-1.75v-8.5A1.75 1.75 0 0010.25 1h-8.5zM13 3.5v7a.5.5 0 001 0v-7a.5.5 0 00-1 0zm2-2v11a.5.5 0 001 0v-11a.5.5 0 00-1 0z', label: 'STALE ISSUES', value: String(data.staleIssuesCount) }
-  ];
-
-  svg += `
-  <!-- Advanced Metrics List -->
-  <g transform="translate(${leftColumn}, ${yPos})">`;
-  
-  metrics.forEach((metric, idx) => {
-    const column = idx % 2;
-    const row = Math.floor(idx / 2);
-    const xPos = column * 330;
-    const yOffset = row * 35;
-    
-    svg += `
-    <g transform="translate(${xPos}, ${yOffset})">
-      <path d="${metric.icon}" fill="${theme.iconColor}" transform="scale(0.8)"/>
-      <text x="20" y="10" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" font-weight="500" fill="${theme.textMuted}">
-        ${metric.label}
-      </text>
-      <text x="250" y="10" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="${theme.text}" text-anchor="end">
-        ${escapeXml(metric.value)}
-      </text>
-    </g>`;
-  });
-  
-  svg += `
-  </g>`;
-
-  yPos += Math.ceil(metrics.length / 2) * 35 + 20;
+  const analyticsResult = generateAnalyticsSVG(data, theme, ICONS, leftColumn, yPos);
+  svg += analyticsResult.svg;
+  yPos += analyticsResult.height;
 
   // Topics Section
   if (data.topics.length > 0) {
@@ -773,45 +643,25 @@ function generateRepoSVG(data, theme) {
     yPos += 40;
   }
 
-  // Footer Section with Additional Info
-  svg += `
-  <!-- FOOTER INFO -->
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <rect width="${width - padding * 2}" height="1" fill="${theme.border}"/>
-  </g>`;
+  // Activity Graph Section
+  yPos += 10;
   
-  yPos += 15;
+  // Calculate 30-day activity data using the graph module
+  const activityData = calculateActivityData({
+    recentCommits: data.recentCommits,
+    recentPRs: data.recentPRs,
+    recentIssues: data.recentIssues
+  });
   
-  svg += `
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <!-- License -->
-    <g>
-      <path d="${ICONS.license}" fill="${theme.iconColor}" transform="scale(0.85)"/>
-      <text x="20" y="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="${theme.textSecondary}">
-        ${data.license ? escapeXml(data.license) : 'No license'}
-      </text>
-    </g>
-    
-    <!-- Features -->
-    <g transform="translate(280, 0)">
-      <text x="0" y="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="${theme.textMuted}">
-        ${data.hasIssues ? '✓' : '✗'} Issues  ${data.hasWiki ? '✓' : '✗'} Wiki  ${data.hasPages ? '✓' : '✗'} Pages  ${data.hasDiscussions ? '✓' : '✗'} Discussions
-      </text>
-    </g>
-  </g>`;
+  // Calculate streak statistics
+  const streakStats = calculateStreakStats(activityData);
   
-  yPos += 20;
+  const graphResult = generateActivityGraphSVG(activityData, theme, width, padding, leftColumn, yPos);
+  svg += graphResult.svg;
   
-  // Latest Release Info
-  if (data.latestRelease) {
-    svg += `
-  <g transform="translate(${leftColumn}, ${yPos})">
-    <text x="0" y="11" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11" fill="${theme.textMuted}">
-      Latest Release: <tspan font-weight="600" fill="${theme.text}">${escapeXml(data.latestRelease.tag)}</tspan> · ${escapeXml(data.latestRelease.publishedAt)}
-    </text>
-  </g>`;
-  }
-
+  // Add streak stats box
+  svg += generateStreakSVG(streakStats, theme, width, yPos);
+  
   svg += `
 </svg>`;
 
@@ -891,119 +741,4 @@ function escapeXml(unsafe) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
-}
-
-/**
- * Calculate repository rank based on multiple weighted metrics
- * @param {Object} metrics - Repository metrics
- * @returns {Object} - { score, tier, color }
- */
-function calculateRepoRank(metrics) {
-  // Define weights for different categories (total = 100%)
-  const WEIGHTS = {
-    // Popularity Metrics (30%)
-    stars: 15,
-    forks: 8,
-    watchers: 7,
-    
-    // Activity Metrics (30%)
-    commitActivity: 12,
-    releaseCadence: 8,
-    recentUpdates: 10,
-    
-    // Community Health (40%)
-    prMergeRate: 10,
-    issueCloseRate: 10,
-    contributorDiversity: 8,
-    discussionActivity: 7,
-    codeQuality: 5
-  };
-
-  let totalScore = 0;
-
-  // 1. Stars Score (0-100 scale, logarithmic)
-  const starsScore = Math.min(100, Math.log10(Math.max(1, metrics.stars)) * 20);
-  totalScore += (starsScore * WEIGHTS.stars) / 100;
-
-  // 2. Forks Score (0-100 scale, logarithmic)
-  const forksScore = Math.min(100, Math.log10(Math.max(1, metrics.forks)) * 25);
-  totalScore += (forksScore * WEIGHTS.forks) / 100;
-
-  // 3. Watchers Score (0-100 scale, logarithmic)
-  const watchersScore = Math.min(100, Math.log10(Math.max(1, metrics.watchers)) * 25);
-  totalScore += (watchersScore * WEIGHTS.watchers) / 100;
-
-  // 4. Commit Activity Score
-  const activityScores = { high: 100, medium: 65, low: 30, unknown: 0 };
-  const activityScore = activityScores[metrics.commitActivity] || 0;
-  totalScore += (activityScore * WEIGHTS.commitActivity) / 100;
-
-  // 5. Release Cadence Score
-  let releaseScore = 0;
-  if (metrics.releaseCadence !== 'N/A') {
-    const cadence = metrics.releaseCadence.toLowerCase();
-    if (cadence.includes('d')) releaseScore = 100; // Daily/weekly releases
-    else if (cadence.includes('w')) releaseScore = 85; // Weekly releases
-    else if (cadence.includes('mo') && parseInt(cadence) <= 3) releaseScore = 70; // 1-3 month cadence
-    else releaseScore = 50; // Longer cadence
-  }
-  totalScore += (releaseScore * WEIGHTS.releaseCadence) / 100;
-
-  // 6. Recent Updates Score (based on days since last update)
-  const daysSinceUpdate = Math.floor((Date.now() - new Date(metrics.pushedAt)) / (1000 * 60 * 60 * 24));
-  let updateScore = 100;
-  if (daysSinceUpdate > 365) updateScore = 20;
-  else if (daysSinceUpdate > 180) updateScore = 40;
-  else if (daysSinceUpdate > 90) updateScore = 60;
-  else if (daysSinceUpdate > 30) updateScore = 80;
-  totalScore += (updateScore * WEIGHTS.recentUpdates) / 100;
-
-  // 7. PR Merge Rate Score (already 0-100)
-  totalScore += (metrics.prMergeRate * WEIGHTS.prMergeRate) / 100;
-
-  // 8. Issue Close Rate Score (already 0-100)
-  totalScore += (metrics.issueCloseRate * WEIGHTS.issueCloseRate) / 100;
-
-  // 9. Contributor Diversity Score
-  let diversityScore = 0;
-  if (metrics.contributorDiversity !== '0/0') {
-    const [active, total] = metrics.contributorDiversity.split('/').map(Number);
-    if (total > 0) {
-      const ratio = active / total;
-      diversityScore = Math.min(100, ratio * 200); // Higher ratio = better diversity
-      if (total >= 10) diversityScore = Math.min(100, diversityScore * 1.2); // Bonus for larger teams
-    }
-  }
-  totalScore += (diversityScore * WEIGHTS.contributorDiversity) / 100;
-
-  // 10. Discussion Activity Score
-  const discussionValue = parseFloat(metrics.discussionActivity) || 0;
-  let discussionScore = Math.min(100, discussionValue * 20); // Scale: 5+ comments = 100
-  totalScore += (discussionScore * WEIGHTS.discussionActivity) / 100;
-
-  // 11. Code Quality Score (commit message quality)
-  const qualityScore = metrics.commitQualityScore || 0;
-  totalScore += (qualityScore * WEIGHTS.codeQuality) / 100;
-
-  // Round to 1 decimal place
-  totalScore = Math.round(totalScore * 10) / 10;
-
-  // Determine tier based on score
-  let tier;
-  if (totalScore >= 90) {
-    tier = 'S';
-  } else if (totalScore >= 75) {
-    tier = 'A';
-  } else if (totalScore >= 60) {
-    tier = 'B';
-  } else if (totalScore >= 45) {
-    tier = 'C';
-  } else {
-    tier = 'D';
-  }
-
-  return {
-    score: totalScore,
-    tier: tier
-  };
 }
