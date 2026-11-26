@@ -2,7 +2,7 @@
 
 [![Banner Image](https://github-repo-readme-stats.vercel.app/api/?username=fewinfos&repo=github-repo-readme-stats)](https://github.com/fewinfos)
 
-
+ 
 # GitHub Repository Stats Widget 
 
 An open-source, fully client-side tool that visualizes **real-time GitHub repository statistics** in an interactive and customizable format — perfect for developers, open-source maintainers, and portfolio builders.
