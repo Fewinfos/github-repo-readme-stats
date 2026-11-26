@@ -3,255 +3,556 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Generate beautiful SVG cards for your GitHub repositories to embed in README files">
+  <meta name="description" content="Generate live, themeable SVG cards with GitHub repository statistics, a contribution calendar, health analytics and a rank — ready to embed in any README.">
+  <meta name="color-scheme" content="light dark">
   <title>GitHub Repo README Stats</title>
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    :root {
+      --bg: #f6f8fa;
+      --surface: #ffffff;
+      --surface-2: #f6f8fa;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --muted: #656d76;
+      --accent: #0969da;
+      --accent-fg: #ffffff;
+      --accent-soft: #ddf4ff;
+      --ok: #1a7f37;
+      --danger: #cf222e;
+      --shadow: 0 8px 24px rgba(31, 35, 40, 0.08);
     }
-
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #010409;
+        --surface: #0d1117;
+        --surface-2: #161b22;
+        --border: #30363d;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --accent: #2f81f7;
+        --accent-fg: #ffffff;
+        --accent-soft: #10243f;
+        --ok: #3fb950;
+        --danger: #f85149;
+        --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
-      background: #f6f8fa;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      color: #1f2328;
     }
+    a { color: var(--accent); }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 32px 20px 64px; }
 
-    .container {
-      background: #ffffff;
-      border-radius: 12px;
-      border: 1px solid #d0d7de;
-      box-shadow: 0 8px 24px rgba(31, 35, 40, 0.12);
-      max-width: 600px;
-      width: 100%;
-      padding: 48px;
-      animation: fadeInUp 0.5s ease-out;
+    header { margin-bottom: 28px; }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--accent); background: var(--accent-soft);
+      padding: 4px 10px; border-radius: 999px; margin-bottom: 14px;
     }
+    h1 { font-size: clamp(26px, 4vw, 38px); line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 10px; }
+    .lead { color: var(--muted); max-width: 720px; font-size: 16px; }
 
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    .layout { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 24px; align-items: start; }
+    @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      box-shadow: var(--shadow); padding: 20px;
     }
+    .panel + .panel { margin-top: 20px; }
+    .panel h2 { font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
 
-    h1 {
-      font-size: 32px;
-      font-weight: 600;
-      color: #0d1117;
-      margin-bottom: 32px;
-      text-align: left;
+    label, .label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    .field { margin-bottom: 14px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    input[type="text"] {
+      width: 100%; padding: 10px 12px; font: inherit; font-size: 14px; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      transition: border-color .15s, box-shadow .15s;
     }
-
-    .form-group {
-      margin-bottom: 24px;
+    input[type="text"]:focus-visible, button:focus-visible, select:focus-visible, summary:focus-visible, .theme input:focus-visible + span {
+      outline: 2px solid var(--accent); outline-offset: 2px;
     }
-
-    label {
-      display: block;
-      font-size: 14px;
-      font-weight: 600;
-      color: #0d1117;
-      margin-bottom: 8px;
+    input[type="text"]::placeholder { color: var(--muted); opacity: .7; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .examples { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .chip {
+      font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 999px; cursor: pointer;
+      color: var(--accent); background: var(--accent-soft); border: 1px solid transparent;
     }
+    .chip:hover { border-color: var(--accent); }
 
-    input[type="text"],
-    select {
-      width: 100%;
-      padding: 12px 14px;
-      font-size: 14px;
-      line-height: 20px;
-      border: 1px solid #d0d7de;
-      border-radius: 6px;
-      background: #ffffff;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      font-family: inherit;
-      color: #0d1117;
+    .themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .theme { position: relative; }
+    .theme input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+    .theme span {
+      display: block; border: 1px solid var(--border); border-radius: 10px; padding: 8px;
+      font-size: 12px; font-weight: 500; text-align: center; background: var(--surface-2); cursor: pointer;
     }
+    .theme .sw { display: block; height: 30px; border-radius: 6px; margin-bottom: 6px; position: relative; overflow: hidden; border: 1px solid rgba(128,128,128,.25); }
+    .theme .sw i { position: absolute; left: 7px; top: 9px; width: 28px; height: 5px; border-radius: 3px; }
+    .theme .sw b { position: absolute; left: 7px; top: 18px; width: 46px; height: 4px; border-radius: 2px; opacity: .8; }
+    .theme .sw u { position: absolute; right: 7px; top: 8px; width: 12px; height: 12px; border-radius: 50%; }
+    .theme input:checked + span { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft), 0 0 0 3px var(--accent); }
 
-    input[type="text"]:focus,
-    select:focus {
-      outline: none;
-      border-color: #0969da;
-      box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.12);
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
+    .seg button { font: inherit; font-size: 13px; padding: 6px 12px; border: 0; background: var(--surface); color: var(--text); cursor: pointer; }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+
+    .toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+    .toggles label { display: flex; align-items: center; gap: 8px; font-weight: 400; font-size: 13px; margin: 0; cursor: pointer; }
+    input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+
+    details { margin-top: 4px; }
+    summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); padding: 4px 0; }
+    .colors { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .color { display: flex; gap: 8px; align-items: center; }
+    .color input[type="color"] { width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 8px; padding: 2px; background: var(--surface); cursor: pointer; }
+    .color input[type="text"] { padding: 7px 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+    .color small { display: block; font-size: 11px; color: var(--muted); }
+    .reset { font: inherit; font-size: 12px; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; margin-top: 8px; }
+
+    .btn {
+      width: 100%; font: inherit; font-size: 14px; font-weight: 600; padding: 12px 16px; margin-top: 6px;
+      color: var(--accent-fg); background: var(--accent); border: 0; border-radius: 8px; cursor: pointer;
+      transition: filter .15s;
     }
+    .btn:hover { filter: brightness(1.08); }
+    .btn:disabled { opacity: .6; cursor: progress; }
 
-    input[type="text"]::placeholder {
-      color: #8b949e;
+    .stage {
+      background:
+        linear-gradient(45deg, var(--surface-2) 25%, transparent 25%, transparent 75%, var(--surface-2) 75%),
+        linear-gradient(45deg, var(--surface-2) 25%, transparent 25%, transparent 75%, var(--surface-2) 75%);
+      background-color: var(--surface);
+      background-size: 20px 20px; background-position: 0 0, 10px 10px;
+      border: 1px solid var(--border); border-radius: 14px; padding: 16px; min-height: 320px;
+      display: flex; align-items: flex-start; justify-content: center; overflow: auto; position: relative;
     }
+    .stage img { display: block; max-width: 100%; height: auto; border-radius: 16px; }
+    .placeholder { align-self: center; text-align: center; color: var(--muted); max-width: 360px; padding: 40px 0; }
+    .placeholder strong { display: block; color: var(--text); font-size: 16px; margin-bottom: 6px; }
+    .loading { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: color-mix(in srgb, var(--surface) 70%, transparent); border-radius: 14px; }
+    .loading.show { display: flex; }
+    .spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
+    .status { min-height: 22px; font-size: 13px; margin-top: 10px; color: var(--muted); }
+    .status.error { color: var(--danger); }
 
-    select {
-      cursor: pointer;
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23586069' d='M4.427 7.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 7H4.604a.25.25 0 00-.177.427z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-      padding-right: 36px;
+    .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 14px; flex-wrap: wrap; }
+    .tabs button { font: inherit; font-size: 13px; padding: 8px 12px; border: 0; background: none; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    .tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+    .code { position: relative; }
+    pre {
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 90px 14px 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.55;
+      white-space: pre-wrap; word-break: break-all; min-height: 56px;
     }
+    .copy { position: absolute; top: 8px; right: 8px; font: inherit; font-size: 12px; font-weight: 600; padding: 5px 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 6px; cursor: pointer; }
+    .copy.done { color: var(--ok); border-color: var(--ok); }
 
-    button {
-      width: 100%;
-      padding: 14px 20px;
-      font-size: 14px;
-      font-weight: 600;
-      color: white;
-      background: #2c5282;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-      font-family: inherit;
-      margin-top: 8px;
-    }
-
-    button:hover {
-      background: #1e3a5f;
-    }
-
-    button:active {
-      background: #162d4a;
-    }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      background: #2c5282;
-    }
-
-    .error-message {
-      display: none;
-      padding: 12px 16px;
-      background: #fff8c5;
-      border: 1px solid #d4a72c;
-      border-radius: 6px;
-      color: #633c01;
-      font-size: 14px;
-      margin-bottom: 20px;
-    }
-
-    .error-message.show {
-      display: block;
-    }
-
-    @media (max-width: 640px) {
-      .container {
-        padding: 32px 24px;
-      }
-
-      h1 {
-        font-size: 28px;
-      }
-    }
+    .params { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .params th, .params td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .params th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+    .params code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+    footer { margin-top: 40px; text-align: center; color: var(--muted); font-size: 13px; }
+    .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Generate GitHub Repo README Stats</h1>
+  <div class="wrap">
+    <header>
+      <span class="eyebrow">Open source · Serverless · No tracking</span>
+      <h1>Live repository cards for your README</h1>
+      <p class="lead">Stars, forks, languages, a GitHub-style contribution calendar, health analytics, a rank and your current streak — as one crisp SVG that updates itself.</p>
+    </header>
 
-    <form id="statsForm">
-      <div class="error-message" id="errorMessage" role="alert" aria-live="polite"></div>
+    <div class="layout">
+      <!-- ============ Controls ============ -->
+      <form id="statsForm" class="panel" novalidate>
+        <h2>Repository</h2>
+        <div class="row">
+          <div class="field">
+            <label for="username">GitHub username</label>
+            <input type="text" id="username" name="username" placeholder="fewinfos" autocomplete="off" spellcheck="false" autocapitalize="off">
+          </div>
+          <div class="field">
+            <label for="repo">Repository</label>
+            <input type="text" id="repo" name="repo" placeholder="github-repo-readme-stats" autocomplete="off" spellcheck="false" autocapitalize="off">
+          </div>
+        </div>
+        <div class="examples" aria-label="Examples">
+          <button type="button" class="chip" data-example="fewinfos/github-repo-readme-stats">fewinfos/github-repo-readme-stats</button>
+          <button type="button" class="chip" data-example="vercel/next.js">vercel/next.js</button>
+          <button type="button" class="chip" data-example="octocat/Hello-World">octocat/Hello-World</button>
+        </div>
 
-      <div class="form-group">
-        <label for="username">GitHub Username</label>
-        <input 
-          type="text" 
-          id="username" 
-          name="username" 
-          placeholder="fewinfos" 
-          required
-          autocomplete="off"
-          aria-describedby="errorMessage"
-        >
+        <h2 style="margin-top:22px">Theme</h2>
+        <div class="themes" id="themes" role="radiogroup" aria-label="Theme"></div>
+
+        <h2 style="margin-top:22px">Sections</h2>
+        <div class="seg" role="group" aria-label="Presets">
+          <button type="button" data-preset="full" aria-pressed="true">Full</button>
+          <button type="button" data-preset="compact" aria-pressed="false">Compact</button>
+          <button type="button" data-preset="minimal" aria-pressed="false">Minimal</button>
+        </div>
+        <div class="toggles" id="toggles"></div>
+
+        <details>
+          <summary>Customize colors &amp; style</summary>
+          <div class="colors" id="colors"></div>
+          <div class="row" style="margin-top:12px">
+            <div>
+              <label for="radius">Corner radius</label>
+              <input type="text" id="radius" inputmode="numeric" placeholder="16">
+            </div>
+            <div style="align-self:end">
+              <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin:0 0 10px"><input type="checkbox" id="hideBorder"> Hide border</label>
+            </div>
+          </div>
+          <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:4px"><input type="checkbox" id="animations" checked> Animations</label>
+          <button type="button" class="reset" id="resetColors">Reset colors</button>
+        </details>
+
+        <button type="submit" class="btn" id="generate">Generate</button>
+      </form>
+
+      <!-- ============ Preview + snippets ============ -->
+      <div>
+        <div class="stage" id="stage" aria-live="polite">
+          <div class="placeholder" id="placeholder">
+            <strong>Your card appears here</strong>
+            Enter a public repository, or pick an example, and press Generate. Changes to the theme and sections update the preview automatically.
+          </div>
+          <img id="preview" alt="Repository statistics card preview" hidden>
+          <div class="loading" id="loading" aria-hidden="true"><div class="spinner"></div></div>
+        </div>
+        <p class="status" id="status" role="status"></p>
+
+        <section class="panel" aria-labelledby="embed-title">
+          <h2 id="embed-title">Embed</h2>
+          <div class="tabs" role="tablist" id="tabs">
+            <button role="tab" aria-selected="true" data-tab="md">Markdown</button>
+            <button role="tab" aria-selected="false" data-tab="html">HTML</button>
+            <button role="tab" aria-selected="false" data-tab="picture">Light &amp; dark</button>
+            <button role="tab" aria-selected="false" data-tab="url">Image URL</button>
+            <button role="tab" aria-selected="false" data-tab="json">JSON</button>
+          </div>
+          <div class="code">
+            <pre id="snippet" tabindex="0">Generate a card to get your snippet.</pre>
+            <button type="button" class="copy" id="copy">Copy</button>
+          </div>
+          <p class="hint" id="snippetHint"></p>
+        </section>
+
+        <section class="panel" aria-labelledby="params-title">
+          <h2 id="params-title">URL parameters</h2>
+          <table class="params">
+            <thead><tr><th>Parameter</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>username</code>, <code>repo</code></td><td>Required. The repository to show.</td></tr>
+              <tr><td><code>theme</code></td><td>Any theme from the picker. Default <code>light</code>.</td></tr>
+              <tr><td><code>hide</code></td><td>Comma separated: <code>description</code> <code>topics</code> <code>stats</code> <code>languages</code> <code>metrics</code> <code>rank</code> <code>calendar</code> <code>activity</code> <code>streak</code> <code>footer</code></td></tr>
+              <tr><td><code>bg_color</code> <code>title_color</code> <code>text_color</code> <code>border_color</code> <code>icon_color</code> <code>accent_color</code></td><td>Hex color without <code>#</code>, e.g. <code>bg_color=0d1117</code>.</td></tr>
+              <tr><td><code>hide_border</code>, <code>border_radius</code></td><td><code>true</code> / a number from 0 to 32.</td></tr>
+              <tr><td><code>animations</code></td><td><code>false</code> turns the entrance animations off.</td></tr>
+              <tr><td><code>cache_seconds</code></td><td>900 – 86400. Default 1800 (30 minutes).</td></tr>
+              <tr><td><code>format=json</code></td><td>Returns the computed statistics as JSON instead of an image.</td></tr>
+            </tbody>
+          </table>
+        </section>
       </div>
+    </div>
 
-      <div class="form-group">
-        <label for="repo">Repository Name</label>
-        <input 
-          type="text" 
-          id="repo" 
-          name="repo" 
-          placeholder="github-repo-readme-stats" 
-          required
-          autocomplete="off"
-          aria-describedby="errorMessage"
-        >
-      </div>
-
-      <div class="form-group">
-        <label for="theme">Theme</label>
-        <select id="theme" name="theme">
-          <option value="light">light – Clean GitHub light theme</option>
-          <option value="dark">dark – GitHub dark theme</option>
-          <option value="dracula">dracula – Dracula theme</option>
-          <option value="nord">nord – Nord theme</option>
-          <option value="monokai">monokai – Monokai theme</option>
-          <option value="gruvbox">gruvbox – Gruvbox theme</option>
-          <option value="solarized">solarized – Solarized dark theme</option>
-          <option value="tokyonight">tokyonight – Tokyo Night theme</option>
-          <option value="catppuccin">catppuccin – Catppuccin theme</option>
-          <option value="ocean">ocean – Ocean theme</option>
-        </select>
-      </div>
-
-      <button type="submit">Generate</button>
-    </form>
+    <footer>
+      Built with ♥ by the community · <a href="https://github.com/Fewinfos/github-repo-readme-stats">View on GitHub</a>
+    </footer>
   </div>
 
   <script>
-    // Form submission handler
-    document.getElementById('statsForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const username = document.getElementById('username').value.trim();
-      const repo = document.getElementById('repo').value.trim();
-      const theme = document.getElementById('theme').value;
-      const errorMessage = document.getElementById('errorMessage');
-      const submitButton = this.querySelector('button[type="submit"]');
+    (function () {
+      'use strict';
 
-      // Validation: require both fields to be non-empty
-      if (!username || !repo) {
-        errorMessage.textContent = 'Please enter both username and repository name';
-        errorMessage.classList.add('show');
-        return;
+      // name -> [background, title, text, accent]. Kept in sync with themes/index.js by a test.
+      var THEMES = {
+        "light": ["#ffffff", "#0969da", "#1f2328", "#1a7f37"],
+        "dark": ["#0d1117", "#58a6ff", "#e6edf3", "#3fb950"],
+        "dracula": ["#282a36", "#bd93f9", "#f8f8f2", "#50fa7b"],
+        "nord": ["#2e3440", "#88c0d0", "#eceff4", "#a3be8c"],
+        "monokai": ["#272822", "#f92672", "#f8f8f2", "#a6e22e"],
+        "gruvbox": ["#282828", "#fb4934", "#ebdbb2", "#b8bb26"],
+        "solarized": ["#002b36", "#268bd2", "#839496", "#859900"],
+        "tokyonight": ["#1a1b26", "#7aa2f7", "#c0caf5", "#9ece6a"],
+        "catppuccin": ["#1e1e2e", "#cba6f7", "#cdd6f4", "#a6e3a1"],
+        "ocean": ["#0f111a", "#84ffff", "#a6accd", "#c3e88d"],
+        "radical": ["#141321", "#fe428e", "#a9fef7", "#a9fef7"],
+        "rosepine": ["#191724", "#c4a7e7", "#e0def4", "#9ccfd8"],
+        "dimmed": ["#22272e", "#539bf5", "#adbac7", "#57ab5a"],
+        "solarizedlight": ["#fdf6e3", "#268bd2", "#586e75", "#6c7c00"],
+        "forest": ["#0f1a14", "#7ee0a1", "#d6efe0", "#7ee0a1"]
+      };
+
+      var SECTIONS = [
+        ['description', 'Description'], ['topics', 'Topics'], ['stats', 'Stat tiles'], ['languages', 'Languages'],
+        ['metrics', 'Health metrics'], ['rank', 'Rank'], ['calendar', 'Calendar'], ['activity', '30-day chart'],
+        ['streak', 'Streak'], ['footer', 'Footer']
+      ];
+      var PRESETS = {
+        full: [],
+        compact: ['calendar', 'activity', 'streak', 'footer'],
+        minimal: ['description', 'topics', 'languages', 'metrics', 'calendar', 'activity', 'footer']
+      };
+      var COLORS = [
+        ['bg_color', 'Background'], ['title_color', 'Title'], ['text_color', 'Text'],
+        ['border_color', 'Border'], ['icon_color', 'Icons'], ['accent_color', 'Calendar accent']
+      ];
+
+      var $ = function (id) { return document.getElementById(id); };
+      var form = $('statsForm'), userEl = $('username'), repoEl = $('repo'), previewEl = $('preview');
+      var stage = $('stage'), placeholder = $('placeholder'), loading = $('loading'), statusEl = $('status');
+      var snippetEl = $('snippet'), copyBtn = $('copy'), hintEl = $('snippetHint'), generateBtn = $('generate');
+      var state = { theme: 'light', tab: 'md', generated: false, blobUrl: null, timer: null, seq: 0 };
+
+      // ---- Build theme picker, section toggles and color inputs ----
+      var themesEl = $('themes');
+      Object.keys(THEMES).forEach(function (name, i) {
+        var c = THEMES[name];
+        var label = document.createElement('label');
+        label.className = 'theme';
+        label.innerHTML =
+          '<input type="radio" name="theme" value="' + name + '"' + (i === 0 ? ' checked' : '') + '>' +
+          '<span><span class="sw" style="background:' + c[0] + '"><i style="background:' + c[1] + '"></i><b style="background:' + c[2] + '"></b><u style="background:' + c[3] + '"></u></span>' + name + '</span>';
+        themesEl.appendChild(label);
+      });
+
+      var togglesEl = $('toggles');
+      SECTIONS.forEach(function (s) {
+        var label = document.createElement('label');
+        label.innerHTML = '<input type="checkbox" data-section="' + s[0] + '" checked> ' + s[1];
+        togglesEl.appendChild(label);
+      });
+
+      var colorsEl = $('colors');
+      COLORS.forEach(function (c) {
+        var wrap = document.createElement('div');
+        wrap.className = 'color';
+        wrap.innerHTML =
+          '<input type="color" data-color-picker="' + c[0] + '" aria-label="' + c[1] + ' color">' +
+          '<div><small>' + c[1] + '</small><input type="text" data-color="' + c[0] + '" placeholder="auto" maxlength="6" spellcheck="false" aria-label="' + c[1] + ' hex"></div>';
+        colorsEl.appendChild(wrap);
+      });
+
+      // ---- URL building ----
+      function hiddenSections() {
+        return SECTIONS.map(function (s) { return s[0]; }).filter(function (id) {
+          return !document.querySelector('[data-section="' + id + '"]').checked;
+        });
       }
 
-      // Disable submit button during processing
-      submitButton.disabled = true;
-      submitButton.textContent = 'Generating...';
+      function params() {
+        var p = [];
+        var add = function (k, v) { p.push(encodeURIComponent(k) + '=' + encodeURIComponent(v).replace(/%2C/g, ',')); };
+        add('username', userEl.value.trim());
+        add('repo', repoEl.value.trim());
+        if (state.theme !== 'light') add('theme', state.theme);
+        var hidden = hiddenSections();
+        if (hidden.length) add('hide', hidden.join(','));
+        COLORS.forEach(function (c) {
+          var v = document.querySelector('[data-color="' + c[0] + '"]').value.trim().replace(/^#/, '');
+          if (/^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)) add(c[0], v);
+        });
+        if ($('hideBorder').checked) add('hide_border', 'true');
+        var radius = $('radius').value.trim();
+        if (/^\d{1,2}$/.test(radius)) add('border_radius', radius);
+        if (!$('animations').checked) add('animations', 'false');
+        return p;
+      }
 
-      // Hide error message
-      errorMessage.classList.remove('show');
+      function urlFor(extra, absolute) {
+        var base = (absolute ? location.origin : '') + '/api?' + params().join('&');
+        return extra ? base + '&' + extra : base;
+      }
 
-      // Redirect to API endpoint (relative path)
-      const apiUrl = `/api?username=${encodeURIComponent(username)}&repo=${encodeURIComponent(repo)}&theme=${encodeURIComponent(theme)}`;
-      window.open(apiUrl, '_blank');
+      // ---- Preview ----
+      function setStatus(msg, isError) {
+        statusEl.textContent = msg || '';
+        statusEl.className = 'status' + (isError ? ' error' : '');
+      }
 
-      // Re-enable button after a short delay
-      setTimeout(function() {
-        submitButton.disabled = false;
-        submitButton.textContent = 'Generate';
-      }, 1000);
-    });
+      function validate() {
+        var user = userEl.value.trim(), repo = repoEl.value.trim();
+        if (!user || !repo) return 'Please enter both a username and a repository name.';
+        if (!/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(user)) return 'That does not look like a valid GitHub username.';
+        if (!/^[A-Za-z0-9._-]{1,100}$/.test(repo) || repo === '.' || repo === '..') return 'That does not look like a valid repository name.';
+        return null;
+      }
 
-    // Hide error message when user starts typing
-    document.getElementById('username').addEventListener('input', function() {
-      document.getElementById('errorMessage').classList.remove('show');
-    });
-    
-    document.getElementById('repo').addEventListener('input', function() {
-      document.getElementById('errorMessage').classList.remove('show');
-    });
+      function refresh() {
+        var problem = validate();
+        if (problem) { setStatus(problem, true); return; }
+
+        var seq = ++state.seq;
+        loading.classList.add('show');
+        generateBtn.disabled = true;
+        setStatus('Fetching live data from GitHub…');
+
+        fetch(urlFor())
+          .then(function (res) {
+            return res.text().then(function (text) { return { ok: res.ok, status: res.status, text: text }; });
+          })
+          .then(function (r) {
+            if (seq !== state.seq) return; // a newer request superseded this one
+            if (!/^\s*<svg/i.test(r.text)) throw new Error('Unexpected response (' + r.status + ')');
+            if (state.blobUrl) URL.revokeObjectURL(state.blobUrl);
+            state.blobUrl = URL.createObjectURL(new Blob([r.text], { type: 'image/svg+xml' }));
+            previewEl.src = state.blobUrl;
+            previewEl.hidden = false;
+            placeholder.hidden = true;
+            state.generated = r.ok;
+            setStatus(r.ok ? 'Done. Copy a snippet below.' : 'GitHub could not provide this repository — see the card above.', !r.ok);
+            renderSnippet();
+          })
+          .catch(function (err) {
+            if (seq !== state.seq) return;
+            setStatus('Could not reach the API: ' + err.message, true);
+          })
+          .then(function () {
+            if (seq !== state.seq) return;
+            loading.classList.remove('show');
+            generateBtn.disabled = false;
+          });
+      }
+
+      function schedule() {
+        if (!state.generated) return;
+        clearTimeout(state.timer);
+        state.timer = setTimeout(refresh, 450);
+      }
+
+      // ---- Snippets ----
+      function renderSnippet() {
+        var user = userEl.value.trim(), repo = repoEl.value.trim();
+        if (validate()) { snippetEl.textContent = 'Generate a card to get your snippet.'; return; }
+        var url = urlFor(null, true), alt = user + '/' + repo + ' stats';
+        var repoUrl = 'https://github.com/' + user + '/' + repo;
+        var out = '', hint = '';
+
+        if (state.tab === 'md') {
+          out = '[![' + alt + '](' + url + ')](' + repoUrl + ')';
+          hint = 'Paste into your README.md. The image links to the repository.';
+        } else if (state.tab === 'html') {
+          out = '<a href="' + repoUrl + '">\n  <img src="' + url + '" alt="' + alt + '" width="100%">\n</a>';
+          hint = 'Use this when you want to control the width.';
+        } else if (state.tab === 'picture') {
+          var strip = function (t) { return urlFor(null, true).replace(/&theme=[^&]*/, '') + '&theme=' + t; };
+          out = '<a href="' + repoUrl + '">\n  <picture>\n    <source media="(prefers-color-scheme: dark)" srcset="' + strip('dark') + '">\n    <source media="(prefers-color-scheme: light)" srcset="' + strip('light') + '">\n    <img alt="' + alt + '" src="' + strip('light') + '" width="100%">\n  </picture>\n</a>';
+          hint = 'GitHub switches the card between light and dark with the reader’s theme.';
+        } else if (state.tab === 'url') {
+          out = url;
+          hint = 'The raw image URL.';
+        } else {
+          out = urlFor('format=json', true);
+          hint = 'The same numbers as JSON — handy for your own dashboards.';
+        }
+        snippetEl.textContent = out;
+        hintEl.textContent = hint;
+      }
+
+      // ---- Events ----
+      form.addEventListener('submit', function (e) { e.preventDefault(); state.generated = true; refresh(); });
+
+      form.addEventListener('change', function (e) {
+        if (e.target.name === 'theme') state.theme = e.target.value;
+        if (e.target.matches('[data-section]')) syncPresetButtons();
+        if (e.target.matches('[data-color-picker]')) {
+          document.querySelector('[data-color="' + e.target.dataset.colorPicker + '"]').value = e.target.value.slice(1);
+        }
+        renderSnippet(); schedule();
+      });
+
+      form.addEventListener('input', function (e) {
+        if (e.target.matches('[data-color]')) {
+          var v = e.target.value.replace(/^#/, '');
+          var picker = document.querySelector('[data-color-picker="' + e.target.dataset.color + '"]');
+          if (/^[0-9a-f]{6}$/i.test(v)) picker.value = '#' + v;
+          renderSnippet(); schedule();
+        } else if (e.target === $('radius')) {
+          renderSnippet(); schedule();
+        } else if (e.target === userEl || e.target === repoEl) {
+          setStatus(''); renderSnippet();
+        }
+      });
+
+      document.querySelectorAll('[data-example]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var parts = btn.dataset.example.split('/');
+          userEl.value = parts[0]; repoEl.value = parts[1];
+          state.generated = true; refresh();
+        });
+      });
+
+      function syncPresetButtons() {
+        var hidden = hiddenSections().sort().join(',');
+        document.querySelectorAll('[data-preset]').forEach(function (b) {
+          b.setAttribute('aria-pressed', String(PRESETS[b.dataset.preset].slice().sort().join(',') === hidden));
+        });
+      }
+      document.querySelectorAll('[data-preset]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var hide = PRESETS[btn.dataset.preset];
+          document.querySelectorAll('[data-section]').forEach(function (c) { c.checked = hide.indexOf(c.dataset.section) === -1; });
+          syncPresetButtons(); renderSnippet(); schedule();
+        });
+      });
+
+      $('resetColors').addEventListener('click', function () {
+        document.querySelectorAll('[data-color]').forEach(function (i) { i.value = ''; });
+        renderSnippet(); schedule();
+      });
+
+      $('tabs').addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-tab]');
+        if (!btn) return;
+        state.tab = btn.dataset.tab;
+        document.querySelectorAll('[data-tab]').forEach(function (b) { b.setAttribute('aria-selected', String(b === btn)); });
+        renderSnippet();
+      });
+
+      copyBtn.addEventListener('click', function () {
+        var text = snippetEl.textContent;
+        var done = function () {
+          copyBtn.textContent = 'Copied'; copyBtn.classList.add('done');
+          setTimeout(function () { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('done'); }, 1400);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, function () { selectText(); });
+        } else { selectText(); }
+        function selectText() {
+          var range = document.createRange(); range.selectNodeContents(snippetEl);
+          var sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+        }
+      });
+
+      // Deep links: /?username=a&repo=b&theme=dark
+      var q = new URLSearchParams(location.search);
+      if (q.get('username')) userEl.value = q.get('username');
+      if (q.get('repo')) repoEl.value = q.get('repo');
+      var wanted = q.get('theme');
+      if (wanted && THEMES[wanted]) {
+        state.theme = wanted;
+        document.querySelector('input[name="theme"][value="' + wanted + '"]').checked = true;
+      }
+      if (userEl.value && repoEl.value) { state.generated = true; refresh(); }
+    })();
   </script>
 </body>
 </html>

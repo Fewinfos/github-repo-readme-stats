@@ -14,3 +14,7 @@ vercel_token
 *.code-workspace
 
 .vercel
+
+# Generated previews / local test output
+previews
+test-output.svg

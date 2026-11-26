@@ -2,13 +2,18 @@
   "version": 2,
   "functions": {
     "api/index.js": {
-      "memory": 128
+      "memory": 128,
+      "maxDuration": 10
     }
   },
   "routes": [
     {
       "src": "/",
       "dest": "/public/index.html"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/public/favicon.ico"
     },
     {
       "src": "/(.*)",

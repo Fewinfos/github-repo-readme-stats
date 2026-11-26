@@ -1,142 +1,151 @@
+'use strict';
+
+const { DAY_MS, formatAge } = require('../utils/format');
+
+const GENERIC_COMMIT = /^(wip|fix|fixes|fixed|update|updates|updated|change|changes|test|tests|commit|minor|misc|stuff|asdf|\.+)$/i;
+
+function median(values) {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+const percent = (part, whole) => (whole > 0 ? Math.round((part / whole) * 100) : null);
+
+/** Contributors needed to account for half of all commits, and the resulting risk level. */
+function calculateBusFactor(contributors) {
+  const total = contributors.reduce((sum, c) => sum + c.contributions, 0);
+  if (contributors.length === 0 || total === 0) return { busFactor: null, busFactorRisk: null };
+
+  const sorted = [...contributors].sort((a, b) => b.contributions - a.contributions);
+  let running = 0;
+  let needed = 0;
+  for (const c of sorted) {
+    running += c.contributions;
+    needed++;
+    if (running / total >= 0.5) break;
+  }
+
+  const topShare = sorted[0].contributions / total;
+  let risk = 'low';
+  if (topShare > 0.7) risk = 'high';
+  else if (needed === 1 || topShare > 0.5) risk = 'medium';
+  return { busFactor: needed, busFactorRisk: risk };
+}
+
+/** Average gap between the most recent releases. */
+function calculateReleaseCadence(releases, now) {
+  if (releases.length === 0) return { label: 'N/A', avgDays: null, daysSinceRelease: null };
+
+  const daysSinceRelease = Math.floor((now - new Date(releases[0].publishedAt)) / DAY_MS);
+  if (releases.length < 2) return { label: 'N/A', avgDays: null, daysSinceRelease };
+
+  const recent = releases.slice(0, 5);
+  let totalDays = 0;
+  for (let i = 0; i < recent.length - 1; i++) {
+    totalDays += Math.abs(new Date(recent[i].publishedAt) - new Date(recent[i + 1].publishedAt)) / DAY_MS;
+  }
+  const avgDays = Math.max(1, Math.floor(totalDays / (recent.length - 1)));
+
+  let label;
+  if (avgDays < 30) label = `~${avgDays}d`;
+  else if (avgDays < 90) label = `~${Math.floor(avgDays / 7)}w`;
+  else label = `~${Math.floor(avgDays / 30)}mo`;
+  return { label, avgDays, daysSinceRelease };
+}
+
+/** Share of commits whose headline looks intentional rather than "wip" / "fix". */
+function calculateCommitQuality(commits) {
+  if (commits.length === 0) return 0;
+  const good = commits.filter((c) => {
+    const headline = String(c.message || '').split('\n')[0].trim();
+    return headline.length >= 12 && headline.length <= 100 && !GENERIC_COMMIT.test(headline);
+  }).length;
+  return Math.round((good / commits.length) * 100);
+}
+
 /**
- * Calculate advanced analytics metrics for a repository
- * @param {Object} params - Parameters for analytics calculation
- * @returns {Object} - Analytics metrics
+ * Derive repository health metrics. Pure: every input is passed in, nothing is fetched.
+ *
+ * @param {Object} p
+ * @param {Array<{message:string,committedDate:string,author:string|null}>} p.commits
+ * @param {Array<{state:string,createdAt:string,mergedAt:string|null,comments:number}>} p.pullRequests
+ * @param {Array<{state:string,createdAt:string,comments:number}>} p.issues
+ * @param {{mergedPRs:number, closedPRs:number, totalIssues:number, closedIssues:number}} p.counts
+ * @param {Array<{login:string,contributions:number}>} p.contributors
+ * @param {number|null} p.contributorsTotal
+ * @param {Array<{publishedAt:string}>} p.releases
+ * @param {string} p.createdAt
+ * @param {number} p.stars
+ * @param {number|null} p.staleIssues - exact count when available
+ * @param {number} p.commits30 - commits during the last 30 days
+ * @param {Date} [p.now]
  */
-function calculateAnalytics(params) {
-  const {
-    recentCommits,
-    recentPRs,
-    recentIssues,
-    totalPullRequests,
-    totalIssues,
-    mergedPRsCount,
-    closedIssuesCount,
-    contributorsData,
-    releasesData,
-    createdAt
-  } = params;
+function calculateAnalytics(p) {
+  const now = p.now || new Date();
 
-  // Calculate commit activity based on recent commits
-  let commitActivity = 'unknown';
-  if (recentCommits.length > 0) {
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const recentCommitCount = recentCommits.filter(c => 
-      c.commit?.committedDate ? new Date(c.commit.committedDate) > thirtyDaysAgo : false
-    ).length;
-    if (recentCommitCount === 0) commitActivity = 'low';
-    else if (recentCommitCount < 10) commitActivity = 'low';
-    else if (recentCommitCount < 30) commitActivity = 'medium';
-    else commitActivity = 'high';
+  // Commit activity over the last 30 days.
+  let commitActivity = 'none';
+  if (p.commits30 >= 30) commitActivity = 'high';
+  else if (p.commits30 >= 10) commitActivity = 'medium';
+  else if (p.commits30 > 0) commitActivity = 'low';
+
+  // PR merge rate among PRs that were resolved (open ones are still pending).
+  const prMergeRate = percent(p.counts.mergedPRs, p.counts.mergedPRs + p.counts.closedPRs);
+  const issueCloseRate = percent(p.counts.closedIssues, p.counts.totalIssues);
+
+  // Median time to merge across recently opened PRs that were merged.
+  const mergeTimes = p.pullRequests
+    .filter((pr) => pr.mergedAt)
+    .map((pr) => new Date(pr.mergedAt) - new Date(pr.createdAt))
+    .filter((ms) => ms >= 0);
+  const medianMergeMs = median(mergeTimes);
+
+  // Contributors who committed during the last 90 days.
+  const ninetyDaysAgo = now - 90 * DAY_MS;
+  const active = new Set();
+  for (const c of p.commits) {
+    if (c.author && new Date(c.committedDate) >= ninetyDaysAgo) active.add(c.author);
   }
 
-  // Calculate PR Merge Rate
-  const prMergeRate = totalPullRequests > 0 ? Math.min(100, Math.floor((mergedPRsCount / totalPullRequests) * 100)) : 0;
+  // Stale issues: exact search count when we have it, otherwise estimate from the recent sample.
+  const staleIssues =
+    p.staleIssues !== null && p.staleIssues !== undefined
+      ? p.staleIssues
+      : p.issues.filter((i) => i.state === 'open' && new Date(i.createdAt) < ninetyDaysAgo).length;
 
-  // Calculate Issue Close Rate
-  const issueCloseRate = totalIssues > 0 ? Math.min(100, Math.floor((closedIssuesCount / totalIssues) * 100)) : 0;
+  // Growth trend from stars per day of life.
+  const ageDays = Math.max(1, Math.floor((now - new Date(p.createdAt)) / DAY_MS));
+  const starsPerDay = Math.round((p.stars / ageDays) * 100) / 100;
+  const growthTrend = starsPerDay > 1 ? 'High Growth' : starsPerDay > 0.1 ? 'Growing' : 'Stable';
 
-  // Calculate Average Time to Merge (for recent PRs)
-  let avgTimeToMerge = 'N/A';
-  const mergedRecentPRs = recentPRs.filter(pr => pr.merged_at);
-  if (mergedRecentPRs.length > 0) {
-    const totalMergeTime = mergedRecentPRs.reduce((sum, pr) => {
-      const created = new Date(pr.created_at);
-      const merged = new Date(pr.merged_at);
-      return sum + (merged - created);
-    }, 0);
-    const avgMs = totalMergeTime / mergedRecentPRs.length;
-    const avgDays = Math.floor(avgMs / (1000 * 60 * 60 * 24));
-    const avgHours = Math.floor((avgMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    avgTimeToMerge = avgDays > 0 ? `${avgDays}d` : `${avgHours}h`;
-  }
+  // Average comments per recent issue/PR.
+  const items = [...p.issues, ...p.pullRequests];
+  const comments = items.reduce((sum, item) => sum + (item.comments || 0), 0);
+  const discussionActivity = items.length > 0 ? Math.round((comments / items.length) * 10) / 10 : 0;
 
-  // Calculate Average Response Time (first comment/review on issues/PRs)
-  let avgResponseTime = 'N/A';
-  const itemsWithComments = [...recentIssues, ...recentPRs].filter(item => item.comments > 0).slice(0, 20);
-  if (itemsWithComments.length > 5) {
-    avgResponseTime = '< 24h'; // Simplified metric
-  }
-
-  // Calculate Stale Issues (open > 90 days)
-  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-  const staleIssuesCount = recentIssues.filter(issue => 
-    issue.state === 'open' && !issue.pull_request && new Date(issue.created_at) < ninetyDaysAgo
-  ).length;
-
-  // Contributor Diversity (new vs returning in recent commits)
-  const contributorSet = new Set();
-  const recentContributorSet = new Set();
-  recentCommits.slice(0, 50).forEach(commit => {
-    if (commit.author?.login) {
-      recentContributorSet.add(commit.author.login);
-    }
-  });
-  contributorsData.forEach(c => contributorSet.add(c.login));
-  const contributorDiversity = contributorSet.size > 0 ? `${recentContributorSet.size}/${contributorSet.size}` : '0/0';
-
-  // Bus Factor (concentration risk - top contributor %)
-  let busFactor = 'Low Risk';
-  if (contributorsData.length > 0) {
-    const totalContributions = contributorsData.reduce((sum, c) => sum + c.contributions, 0);
-    const topContributorPercent = (contributorsData[0].contributions / totalContributions) * 100;
-    if (topContributorPercent > 70) busFactor = 'High Risk';
-    else if (topContributorPercent > 50) busFactor = 'Medium Risk';
-    else busFactor = 'Low Risk';
-  }
-
-  // Release Cadence
-  let releaseCadence = 'N/A';
-  if (releasesData.length >= 2) {
-    const recentReleases = releasesData.slice(0, 5);
-    let totalDaysBetween = 0;
-    for (let i = 0; i < recentReleases.length - 1; i++) {
-      const date1 = new Date(recentReleases[i].published_at);
-      const date2 = new Date(recentReleases[i + 1].published_at);
-      totalDaysBetween += Math.abs(date1 - date2) / (1000 * 60 * 60 * 24);
-    }
-    const avgDays = Math.floor(totalDaysBetween / (recentReleases.length - 1));
-    if (avgDays < 30) releaseCadence = `~${avgDays}d`;
-    else if (avgDays < 90) releaseCadence = `~${Math.floor(avgDays / 7)}w`;
-    else releaseCadence = `~${Math.floor(avgDays / 30)}mo`;
-  }
-
-  // Commit Message Quality Score (simplified)
-  let commitQualityScore = 0;
-  if (recentCommits.length > 0) {
-    const qualityCommits = recentCommits.filter(commit => {
-      const msg = commit.commit?.message || '';
-      return msg.length >= 20 && msg.length <= 200 && !msg.match(/^(fix|update|change|wip)$/i);
-    }).length;
-    commitQualityScore = Math.floor((qualityCommits / recentCommits.length) * 100);
-  }
-
-  // Growth Trend (stars growth estimate based on age)
-  const repoAgeInDays = Math.floor((Date.now() - new Date(createdAt)) / (1000 * 60 * 60 * 24));
-  const starsPerDay = repoAgeInDays > 0 ? (params.stars / repoAgeInDays).toFixed(2) : 0;
-  const growthTrend = parseFloat(starsPerDay) > 1 ? 'High Growth' : parseFloat(starsPerDay) > 0.1 ? 'Growing' : 'Stable';
-
-  // Discussion Activity (comments per issue/PR)
-  const totalItems = recentIssues.length + recentPRs.length;
-  const totalComments = [...recentIssues, ...recentPRs].reduce((sum, item) => sum + (item.comments || 0), 0);
-  const discussionActivity = totalItems > 0 ? (totalComments / totalItems).toFixed(1) : '0.0';
+  const cadence = calculateReleaseCadence(p.releases, now);
 
   return {
     commitActivity,
+    commits30: p.commits30,
     prMergeRate,
     issueCloseRate,
-    avgTimeToMerge,
-    avgResponseTime,
-    staleIssuesCount,
-    contributorDiversity,
-    busFactor,
-    releaseCadence,
-    commitQualityScore,
+    medianMergeMs,
+    staleIssues,
+    activeContributors: active.size,
+    totalContributors: p.contributorsTotal,
+    ...calculateBusFactor(p.contributors),
+    releaseCadence: cadence.label,
+    releaseAvgDays: cadence.avgDays,
+    daysSinceRelease: cadence.daysSinceRelease,
+    commitQualityScore: calculateCommitQuality(p.commits),
     growthTrend,
     starsPerDay,
     discussionActivity,
-    activeContributors: recentContributorSet.size
+    repoAge: formatAge(p.createdAt, now)
   };
 }
 
-module.exports = { calculateAnalytics };
+module.exports = { calculateAnalytics, calculateBusFactor, calculateReleaseCadence, calculateCommitQuality };
